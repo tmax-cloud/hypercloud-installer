@@ -1,0 +1,38 @@
+.wrap {
+  /* border: 1px solid red; */
+  width: 100%;
+}
+
+.contents {
+  text-align: center;
+  min-width: 300px;
+}
+.contents > div {
+  margin-bottom: 20px;
+}
+
+.circle {
+  position: relative;
+  border: 4px solid #c5c5c8 !important;
+  width: 300px !important;
+  height: 300px !important;
+}
+
+.installedCircle {
+  position: relative;
+  /* border: 4px solid #0992AC !important; */
+  border: 4px solid var(--global-color-secondary) !important;
+  width: 300px !important;
+  height: 300px !important;
+}
+
+.insideCircle > div {
+  padding: 0 20px;
+}
+
+.installedImage {
+  width: 50px;
+  position: absolute;
+  left: 0px;
+  top: 30px;
+}

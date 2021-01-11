@@ -1,0 +1,31 @@
+.wrap {
+  padding: 50px 50px;
+  /* min-width: 600px; */
+}
+
+.tableToolBar {
+  margin-bottom: 5px;
+}
+.tableToolBar > span {
+  width: 50%;
+  /* span tag width 적용 위함*/
+  display: inline-block;
+}
+
+/* .select {
+  margin-right: 10px !important;
+} */
+.select > div {
+  height: 30px;
+  border-radius: 0px;
+}
+.select > div > select {
+  padding: 5px 0 5px 10px;
+}
+
+.search > div{
+  height: 30px;
+  border-radius: 0px;
+}
+
+

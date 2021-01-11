@@ -1,0 +1,42 @@
+.wrap {
+  padding: 10px;
+}
+
+.title {
+  margin-left: 10px;
+  font-size: 30px;
+}
+
+.textBox {
+  margin-top: 80px;
+  margin-bottom: 50px;
+}
+.textBoxRow {
+  margin-bottom: 10px;
+}
+
+.productBox {
+  height: 100%;
+  width: 100%;
+}
+.productBox:hover {
+  cursor: pointer;
+  border: 1px solid var(--global-color-primary);
+}
+.productBox--second {
+  height: 100%;
+  width: 100%;
+}
+.productBox--second:hover {
+  cursor: pointer;
+  border: 1px solid var(--global-color-secondary);
+}
+
+.productBoxContents {
+  padding: 5px 20px;
+  width: 100%;
+}
+
+.installedImageBox {
+  height: 20px;
+}

@@ -1,0 +1,21 @@
+.wrap {
+  /* 영역 확인용 background-color */
+  /* background-color:yellow; */
+  height: 100%;
+}
+
+.box{
+  /* 영역 확인용 background-color */
+  /* background-color: black; */
+
+  /* child 가운데 정렬 */
+  text-align: center;
+}
+
+.mainTextBox{
+  margin: 60px 0px 25px 0px;
+}
+.subTextBox{
+  margin: 15px 0px 0px 0px;
+}
+

@@ -1,0 +1,43 @@
+/*
+button
+*/
+/* size */
+button.veryLarge {
+}
+button.large {
+}
+button.medium {
+}
+button.small {
+}
+button.verySmall {
+}
+/* color */
+button.primary {
+  background-color: var(--global-color-primary);
+  color: var(--global-color-white);
+}
+button.primary:hover {
+  background-color: var(--global-color-primary-hover);
+  color: var(--global-color-white);
+}
+button.primary:active {
+  background-color: var(--global-color-primary-active);
+  color: var(--global-color-white);
+}
+
+button.secondary {
+  background-color: var(--global-color-secondary-active);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
+}
+button.secondary:hover {
+  background-color: var(--global-color-secondary-active);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
+}
+button.secondary:active {
+  background-color: var(--global-color-secondary-active);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
+}

@@ -1,0 +1,87 @@
+.wrap {
+  background: var(--global-background-color);
+  color: var(--global-color-white) !important;
+  font-weight: bold;
+  /* padding: 10px; */
+  /* width: 25%; */
+  /* height: calc(100vh - 60px); */
+}
+.selectBox {
+  height: 35px;
+  margin-top: 19px;
+}
+.selectBox > div {
+  width: 70%;
+  color: var(--global-color-white) !important;
+}
+.selectBox > div::before,
+.selectBox > div::after {
+  border-bottom: 0px !important;
+}
+.selectBox > div > select {
+  background-color: #484c52 !important;
+  border-radius: 18.5px !important;
+  padding-left: 20px !important;
+}
+.selectBox svg {
+  color: var(--global-color-white);
+}
+.selectBox > a {
+  margin-top: 5px;
+  margin-left: 5px;
+}
+
+.lnb {
+  /* selectEnv 높이 만큼 빼준다. */
+  height: calc(100% - 35px - 19px);
+}
+.lnb nav {
+  padding: 0 !important;
+}
+
+.notInstalled svg,
+.notInstalled span {
+  color: #737579 !important;
+}
+
+.installed svg,
+.installed span {
+  color: var(--global-color-white) !important;
+}
+
+.clicked svg {
+  color: var(--global-color-primary) !important;
+}
+.clicked span {
+  color: var(--global-color-white) !important;
+}
+
+/* @media (max-width: 600px) {
+  .wrap {
+    width: 100vw;
+    height: 20%;
+    overflow: auto
+  }
+  .lnb {
+    height: 20%;
+  }
+} */
+
+.loader {
+  border: 3px solid #f3f3f3; /* Light grey */
+  border-top: 3px solid var(--global-color-primary); /* Blue */
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  animation: spin 1s linear infinite;
+  margin-left: 10px;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

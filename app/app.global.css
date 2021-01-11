@@ -1,0 +1,131 @@
+/*
+ * @NOTE: Prepend a `~` to css file paths that are in your node_modules
+ *        See https://github.com/webpack-contrib/sass-loader#imports
+ */
+
+@import '~@fortawesome/fontawesome-free/css/all.css';
+@import url(http://fonts.googleapis.com/earlyaccess/notosanskr.css);
+
+@import 'css/button.css';
+@import 'css/div.css';
+@import 'css/font.css';
+@import 'css/image.css';
+@import 'css/removeMaterialGlobalCSS.css';
+@import 'css/span.css';
+@import 'css/table.css';
+@import 'css/textfiled.css';
+@import 'css/titlebar.css';
+
+:root {
+  /* global */
+  --global-background-color: #28384f;
+
+  --global-color-red: red;
+  --global-color-white: white;
+  --global-color-gray: #536882;
+
+  --global-color-primary: #0992ac;
+  --global-color-primary-hover: #067c92;
+  --global-color-primary-active: #046a7d;
+
+  --global-color-secondary: #ffffff;
+  --global-color-secondary-hover: #e9f0f8;
+  --global-color-secondary-active: #dde8f7;
+
+  /* table */
+  --table-color-primary: #31475e;
+
+  /* button */
+  --button-color-disabled: #c4c4c4;
+  --button-background-color-disabled: rgba(255, 255, 255, 0.5);
+
+  /* font */
+  --font-color-dark: #4f5257;
+  --font-color-lightDark: #6a6a6a;
+  --font-color-indicator: #0992ac;
+}
+
+/*
+h2 {
+  margin: 0;
+  font-size: 2.25rem;
+  font-weight: bold;
+  letter-spacing: -0.025em;
+  color: #fff;
+}
+
+p {
+  font-size: 24px;
+}
+
+a {
+  opacity: 0.75;
+  text-decoration: none;
+}
+
+a:hover {
+  opacity: 1;
+  text-decoration: none;
+  cursor: pointer;
+} */
+
+body {
+  position: relative;
+  height: 100vh;
+  width: 100vw;
+  /* min-width: 800px;
+  min-height: 600px; */
+  /* font-family: Arial, Helvetica, Helvetica Neue, serif, "Noto Sans KR", sans-serif; */
+  font-family: 'Noto Sans KR', sans-serif;
+}
+
+a {
+  /* opacity: 0.75; */
+  text-decoration: none;
+}
+
+a:hover {
+  /* opacity: 1; */
+  text-decoration: none;
+  cursor: pointer;
+}
+
+h1 {
+  margin: 0;
+}
+
+li {
+  list-style: none;
+}
+
+ul {
+  padding: 0;
+}
+
+svg {
+  cursor: pointer;
+}
+
+#root {
+  height: 100%;
+}
+
+/*
+공통
+*/
+.red {
+  color: var(--global-color-red);
+}
+
+.visible {
+  visibility: visible !important;
+}
+.hidden {
+  visibility: none !important;
+}
+
+/* tooltip */
+/* default padding 제거 */
+.MuiButtonBase-root.MuiIconButton-root {
+  padding: 0px;
+}
