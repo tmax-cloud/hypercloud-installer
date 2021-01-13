@@ -30,6 +30,9 @@
   margin-top: 5px;
   margin-left: 5px;
 }
+.selectBox option {
+  color: black;
+}
 
 .lnb {
   /* selectEnv 높이 만큼 빼준다. */

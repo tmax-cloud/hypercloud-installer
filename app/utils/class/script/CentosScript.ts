@@ -1,13 +1,38 @@
 /* eslint-disable class-methods-use-this */
-import Node, { ROLE } from '../Node';
-import AbstractCentosScript from './AbstractCentosScript';
-import { InterfaceKubernetesInstall } from './InterfaceKubernetesInstall';
 import Env, { NETWORK_TYPE } from '../Env';
-import CniInstaller from '../installer/CniInstaller';
+import AbstractScript from './AbstractScript';
 import KubernetesInstaller from '../installer/KubernetesInstaller';
+import Node, { ROLE } from '../Node';
+import CniInstaller from '../installer/CniInstaller';
 
-export default class CentosKubernetesScript extends AbstractCentosScript
-  implements InterfaceKubernetesInstall {
+export default class CentosScript extends AbstractScript {
+  /**
+   * centos 스크립트 구현
+   */
+  cloneGitFile(repoPath: string, repoBranch = 'master') {
+    return `
+    yum install -y git;
+    mkdir -p ~/${Env.INSTALL_ROOT};
+    cd ~/${Env.INSTALL_ROOT};
+    git clone -b ${repoBranch} ${repoPath};
+    `;
+  }
+
+  installPackage() {
+    return `
+    # wget
+    sudo yum install -y wget;
+
+    # jq
+    sudo curl -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq;
+    sudo chmod a+x /usr/local/bin/jq;
+    jq -V;
+
+    # sshpass
+    sudo yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/sshpass-1.06-2.el7.x86_64.rpm;
+    `;
+  }
+
   // ntp 설치
   installNtp(): string {
     return `
@@ -175,6 +200,12 @@ EOF
     yum-config-manager --disable 'CentOS-7 - Updates';
     sudo yum clean all;
     #rm -rf ${destPath};
+    `;
+  }
+
+  installGdisk(): string {
+    return `
+    yum install -y gdisk;
     `;
   }
 }

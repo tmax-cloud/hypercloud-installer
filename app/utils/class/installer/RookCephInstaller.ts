@@ -5,7 +5,7 @@ import * as scp from '../../common/scp';
 import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import Node from '../Node';
-import ScriptRookCephFactory from '../script/ScriptRookCephFactory';
+import ScriptFactory from '../script/ScriptFactory';
 
 export default class RookCephInstaller extends AbstractInstaller {
   public static readonly IMAGE_DIR = `rook-install`;
@@ -167,14 +167,14 @@ export default class RookCephInstaller extends AbstractInstaller {
   //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
   //     // main master를 ntp 서버로
   //     // main master를 제외한 노드를 ntp client로 설정하기 위함
-  //     let script = ScriptRookCephFactory.createScript(mainMaster.os.type);
+  //     let script = ScriptFactory.createScript(mainMaster.os.type);
   //     mainMaster.cmd = script.installNtp();
   //     mainMaster.cmd += this._setNtpServer();
   //     await mainMaster.exeCmd(callback);
   //     workerArr.concat(masterArr);
   //     await Promise.all(
   //       workerArr.map(worker => {
-  //         script = ScriptRookCephFactory.createScript(worker.os.type);
+  //         script = ScriptFactory.createScript(worker.os.type);
   //         worker.cmd = script.installNtp();
   //         worker.cmd += this._setNtpClient(mainMaster.ip);
   //         return worker.exeCmd(callback);
@@ -184,7 +184,7 @@ export default class RookCephInstaller extends AbstractInstaller {
   //     // 한국 공용 타임서버 목록 설정
   //     await Promise.all(
   //       this.env.nodeList.map((node: Node) => {
-  //         const script = ScriptRookCephFactory.createScript(node.os.type);
+  //         const script = ScriptFactory.createScript(node.os.type);
   //         node.cmd = script.installNtp();
   //         node.cmd += this._setPublicNtp();
   //         return node.exeCmd(callback);
@@ -198,7 +198,7 @@ export default class RookCephInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing gdisk... @@@@@@');
     await Promise.all(
       this.env.nodeList.map((node: Node) => {
-        const script = ScriptRookCephFactory.createScript(node.os.type);
+        const script = ScriptFactory.createScript(node.os.type);
         node.cmd = script.installGdisk();
         return node.exeCmd(callback);
       })
@@ -284,7 +284,7 @@ export default class RookCephInstaller extends AbstractInstaller {
     }
 
     // mon count 3 설정
-    clusterYaml.spec.mon.count = option.disk.length;
+    clusterYaml.spec.mon.count = Object.keys(option.disk).length;
 
     // 선택한 OSD 설치 할 디스크 없으면, 자동으로 OSD 설치 가능한 디스크 탐색 모드로 설정
     if (osdCount === 0) {

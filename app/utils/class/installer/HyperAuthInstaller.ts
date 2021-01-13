@@ -4,7 +4,8 @@ import YAML from 'yaml';
 import * as scp from '../../common/scp';
 import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
-import ScriptHyperAuthFactory from '../script/ScriptHyperAuthFactory';
+import ScriptFactory from '../script/ScriptFactory';
+
 import * as Common from '../../common/common';
 import Node from '../Node';
 
@@ -126,7 +127,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
   private _step2(osType: string): string {
     // TODO:Kubernetes Master가 다중화 된 경우, hyperauth.crt를 각 Master 노드들의 /etc/kubernetes/pki/hyperauth.crt 로 cp
-    const script = ScriptHyperAuthFactory.createScript(osType);
+    const script = ScriptFactory.createScript(osType);
 
     return `
     cd ~/${HyperAuthInstaller.INSTALL_HOME};
