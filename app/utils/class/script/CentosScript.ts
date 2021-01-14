@@ -1,3 +1,4 @@
+/* eslint-disable no-underscore-dangle */
 /* eslint-disable class-methods-use-this */
 import Env, { NETWORK_TYPE } from '../Env';
 import AbstractScript from './AbstractScript';
@@ -5,10 +6,113 @@ import KubernetesInstaller from '../installer/KubernetesInstaller';
 import Node, { ROLE } from '../Node';
 import CniInstaller from '../installer/CniInstaller';
 
+/**
+ * centos 스크립트 구현
+ */
 export default class CentosScript extends AbstractScript {
-  /**
-   * centos 스크립트 구현
-   */
+  startInstallKubernetes(): string {
+    return `
+    #install kubernetes
+    if [[ -z \${k8sVersion} ]]; then
+    k8sVersion=1.17.6
+    else
+    k8sVersion=\${k8sVersion}
+    fi
+
+    if [[ -z \${apiServer} ]]; then
+    apiServer=127.0.0.1
+    else
+        apiServer=\${apiServer}
+    fi
+
+    if [[ -z \${podSubnet} ]]; then
+      podSubnet=10.244.0.0/16
+    else
+       podSubnet=\${podSubnet}
+    fi
+
+    #install kubernetes components
+    sudo yum install -y kubeadm-\${k8sVersion}-0 kubelet-\${k8sVersion}-0 kubectl-\${k8sVersion}-0
+    sudo systemctl enable --now kubelet
+
+    sudo echo '1' > /proc/sys/net/ipv4/ip_forward
+    sudo echo '1' > /proc/sys/net/bridge/bridge-nf-call-iptables
+
+    #change kubeadm yaml
+    sudo sed -i "s|{k8sVersion}|v\${k8sVersion}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|{apiServer}|\${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|{podSubnet}|\${podSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
+    if [[ "\${imageRegistry}" == "" ]]; then
+    sudo sed -i "s|{imageRegistry}/|\${imageRegistry}|g" \${yaml_dir}/kubeadm-config.yaml
+    else
+    sudo sed -i "s|{imageRegistry}|\${imageRegistry}|g" \${yaml_dir}/kubeadm-config.yaml
+    fi
+    `;
+  }
+
+  setEnvForKubernetes(): string {
+    return `
+    ${AbstractScript.setInstallDir()}
+
+    # disable firewall
+    sudo systemctl disable firewalld
+    sudo systemctl stop firewalld
+
+    #swapoff
+    sudo swapoff -a
+    #/etc/fstab에서 swap들어간 줄 주석처리
+    sed -e '/swap/ s/^#*/#/' -i /etc/fstab
+
+    #selinux mode
+    sudo setenforce 0
+    sudo sed -i 's/^SELINUX=enforcing$/SELINUX=permissive/' /etc/selinux/config
+
+    #crio-kube set
+    sudo modprobe overlay
+    sudo modprobe br_netfilter
+
+    sudo cat << "EOF" | sudo tee -a /etc/sysctl.d/99-kubernetes-cri.conf
+    net.bridge.bridge-nf-call-iptables  = 1
+    net.ipv4.ip_forward                 = 1
+    net.bridge.bridge-nf-call-ip6tables = 1
+EOF
+    sudo sysctl --system;
+    `;
+  }
+
+  startInstallCrio(): string {
+    return `
+    # install crio
+    sudo yum install -y cri-o
+    sudo systemctl enable crio
+    sudo systemctl start crio
+
+    # check crio
+    sudo systemctl status crio
+    rpm -qi cri-o
+
+    # remove cni0
+    sudo rm -rf  /etc/cni/net.d/100-crio-bridge.conf
+    sudo rm -rf  /etc/cni/net.d/200-loopback.conf
+
+    # edit crio config
+    sudo sed -i 's/\\"\\/usr\\/libexec\\/cni\\"/\\"\\/usr\\/libexec\\/cni\\"\\,\\"\\/opt\\/cni\\/bin\\"/g' /etc/crio/crio.conf
+
+    if [[ -z \${imageRegistry} ]]; then
+      echo "image registry is not set"
+    else
+      # set crio registry config
+      sudo sed -i 's/\\#insecure\\_registries = \\"\\[\\]\\"/\\insecure\\_registries = \\[\\"{imageRegistry}\\"\\]/g' /etc/crio/crio.conf
+      sudo sed -i 's/\\#registries = \\[/registries = \\[\\"{imageRegistry}\\"\\]/g' /etc/crio/crio.conf
+      sed -i 's/k8s.gcr.io/{imageRegistry}\\/k8s.gcr.io/g' /etc/crio/crio.conf
+      sed -i 's/registry.fedoraproject.org/{imageRegistry}/g' /etc/containers/registries.conf
+      sudo sed -i "s|{imageRegistry}|\${imageRegistry}|g" /etc/crio/crio.conf
+      sudo sed -i "s|{imageRegistry}|\${imageRegistry}|g" /etc/containers/registries.conf
+    fi
+      sudo systemctl restart crio;
+    `;
+  }
+
   cloneGitFile(repoPath: string, repoBranch = 'master') {
     return `
     yum install -y git;
@@ -18,7 +122,7 @@ export default class CentosScript extends AbstractScript {
     `;
   }
 
-  installPackage() {
+  installPackage(): string {
     return `
     # wget
     sudo yum install -y wget;
@@ -33,7 +137,6 @@ export default class CentosScript extends AbstractScript {
     `;
   }
 
-  // ntp 설치
   installNtp(): string {
     return `
       yum install -y ntp;
@@ -108,15 +211,9 @@ EOF`;
   getK8sMasterRemoveScript(): string {
     const deleteHostName = `sudo sed -i /\`hostname\`/d /etc/hosts`;
     return `
-      cd ~/${KubernetesInstaller.INSTALL_HOME};
-      cp -f ~/${
-        Env.INSTALL_ROOT
-      }/hypercloud-install-guide/installer/install.sh .;
-      chmod 755 install.sh;
+      cd ~/${KubernetesInstaller.INSTALL_HOME}/manifest;
       sed -i 's|\\r$||g' k8s.config;
-      sed -i 's|\\r$||g' install.sh;
-      ./install.sh delete;
-      ./install.sh delete;
+      ${AbstractScript.removeKubernetes()}
       yum remove -y kubeadm;
       yum remove -y kubelet;
       yum remove -y kubectl;
@@ -131,6 +228,7 @@ EOF`;
       rm -rf /etc/kubernetes/;
       ${CniInstaller.deleteCniConfigScript()}
       ${deleteHostName}
+      rm -rf ~/${KubernetesInstaller.INSTALL_HOME};
       `;
   }
 

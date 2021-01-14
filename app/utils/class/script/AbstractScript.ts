@@ -6,6 +6,59 @@ export default abstract class AbstractScript {
   /**
    * OS 디펜던시가 없는 스크립트들은 이곳에 만든다.
    */
+  static setK8sConfig(
+    registry: string,
+    version: string,
+    virtualIp: string,
+    podSubnet?: string
+  ) {
+    let podSubnetScript = '';
+    if (podSubnet) {
+      podSubnetScript = `sudo sed -i "s|$podSubnet|${podSubnet}|g" ./k8s.config;`;
+    }
+    return `
+    cd ~/${KubernetesInstaller.INSTALL_HOME}/manifest;
+    sed -i 's|\\r$||g' k8s.config;
+    . k8s.config;
+    sudo sed -i "s|$imageRegistry|${registry}|g" ./k8s.config;
+    sudo sed -i "s|$crioVersion|${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
+    sudo sed -i "s|$k8sVersion|${version}|g" ./k8s.config;
+    sudo sed -i "s|$apiServer|${virtualIp}|g" ./k8s.config;
+    ${podSubnetScript}
+    `;
+  }
+
+  static removeKubernetes(): string {
+    return `
+    ${AbstractScript.setInstallDir()}
+    kubeadm reset -f --cri-socket=/var/run/crio/crio.sock;
+
+    sudo sed -i "s|v\${k8sVersion}|{k8sVersion}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|\${apiServer}|{apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|\${podSubnet}|{podSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|\${imageRegistry}|{imageRegistry}|g" \${yaml_dir}/kubeadm-config.yaml
+
+    sudo rm -rf $HOME/.kube
+    `;
+  }
+
+  static makeMasterKubeConfig(): string {
+    return `
+    mkdir -p $HOME/.kube;
+    sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config;
+    sudo chown $(id -u):$(id -g) $HOME/.kube/config;
+    `;
+  }
+
+  static setInstallDir() {
+    return `
+    install_dir=$(dirname "$0");
+    . \${install_dir}/k8s.config;
+
+    yaml_dir="\${install_dir}/yaml";
+    `;
+  }
+
   static setHostName(hostName: string): string {
     return `sudo hostnamectl set-hostname ${hostName};`;
   }
@@ -25,7 +78,7 @@ export default abstract class AbstractScript {
 
   static getK8sClusterMasterJoinScript(): string {
     return `
-    cd ~/${KubernetesInstaller.INSTALL_HOME}/yaml;
+    cd ~/${KubernetesInstaller.INSTALL_HOME}/manifest/yaml;
     result=\`kubeadm init phase upload-certs --upload-certs --config=./kubeadm-config.yaml\`;
     certkey=\${result#*key:};
     echo "%%%\`kubeadm token create --print-join-command --certificate-key \${certkey}\`%%%"
@@ -69,6 +122,10 @@ export default abstract class AbstractScript {
     `;
   }
 
+  static initKube(): string {
+    return `sudo kubeadm init --config=\${yaml_dir}/kubeadm-config.yaml --upload-certs`;
+  }
+
   static setPublicNtp(): string {
     return `
     echo -e "server 1.kr.pool.ntp.org\nserver 0.asia.pool.ntp.org\nserver 2.asia.pool.ntp.org" > /etc/ntp.conf;
@@ -80,6 +137,12 @@ export default abstract class AbstractScript {
    * OS 디펜던시가 있는 스크립트들은
    * 각 OS abstract 클래스에서 구현
    */
+  abstract startInstallKubernetes(): string;
+
+  abstract setEnvForKubernetes(): string;
+
+  abstract startInstallCrio(): string;
+
   abstract cloneGitFile(repoPath: string, repoBranch: string): string;
 
   abstract installPackage(): string;

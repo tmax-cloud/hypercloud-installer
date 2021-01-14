@@ -40,7 +40,7 @@ export default class CniInstaller extends AbstractInstaller {
     const { version, callback, setProgress } = param;
 
     setProgress(10);
-    await this._preWorkInstall({
+    await this.preWorkInstall({
       version,
       callback
     });
@@ -81,7 +81,7 @@ export default class CniInstaller extends AbstractInstaller {
 
   private _getInstallScript(): string {
     return `
-      . ~/${KubernetesInstaller.INSTALL_HOME}/k8s.config;
+      . ~/${KubernetesInstaller.INSTALL_HOME}/manifest/k8s.config;
       cd ~/${CniInstaller.INSTALL_HOME};
       sed -i 's/v3.13.4/'v${CniInstaller.CNI_VERSION}'/g' calico_${CniInstaller.CNI_VERSION}.copy.yaml;
       sed -i 's|10.0.0.0/16|'$podSubnet'|g' calico_${CniInstaller.CNI_VERSION}.copy.yaml;
@@ -120,7 +120,7 @@ export default class CniInstaller extends AbstractInstaller {
   }
 
   // protected abstract 구현
-  protected async _preWorkInstall(param: { version: string; callback: any }) {
+  protected async preWorkInstall(param: { version: string; callback: any }) {
     console.debug('@@@@@@ Start pre-installation... @@@@@@');
     const { callback } = param;
     await this._copyFile(callback);
@@ -129,8 +129,8 @@ export default class CniInstaller extends AbstractInstaller {
       /**
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        */
-      await this._downloadImageFile();
-      await this._sendImageFile();
+      await this.downloadImageFile();
+      await this.sendImageFile();
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
       // external network 경우 해주어야 할 작업들
       /**
@@ -143,14 +143,14 @@ export default class CniInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this._registryWork({
+      await this.registryWork({
         callback
       });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async _downloadImageFile() {
+  protected async downloadImageFile() {
     // TODO: download image file
     console.debug(
       '@@@@@@ Start downloading the image file to client local... @@@@@@'
@@ -160,7 +160,7 @@ export default class CniInstaller extends AbstractInstaller {
     );
   }
 
-  protected async _sendImageFile() {
+  protected async sendImageFile() {
     console.debug(
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
@@ -172,13 +172,13 @@ export default class CniInstaller extends AbstractInstaller {
     );
   }
 
-  protected async _registryWork(param: { callback: any }) {
+  protected async registryWork(param: { callback: any }) {
     console.debug(
       '@@@@@@ Start pushing the image at main master node... @@@@@@'
     );
     const { callback } = param;
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getImagePushScript();
+    mainMaster.cmd = this.getImagePushScript();
     mainMaster.cmd += this._getImagePathEditScript();
     await mainMaster.exeCmd(callback);
     console.debug(
@@ -186,7 +186,7 @@ export default class CniInstaller extends AbstractInstaller {
     );
   }
 
-  protected _getImagePushScript(): string {
+  protected getImagePushScript(): string {
     let gitPullCommand = `
     mkdir -p ~/${CniInstaller.IMAGE_HOME};
     export CNI_HOME=~/${CniInstaller.IMAGE_HOME};

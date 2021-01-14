@@ -30,7 +30,7 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
   public async install(param: { callback: any; setProgress: Function }) {
     const { callback } = param;
 
-    await this._preWorkInstall({
+    await this.preWorkInstall({
       callback
     });
 
@@ -163,13 +163,13 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
   // }
 
   // protected abstract 구현
-  protected async _preWorkInstall(param?: any) {
+  protected async preWorkInstall(param?: any) {
     console.debug('@@@@@@ Start pre-installation... @@@@@@');
     const { callback } = param;
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       // internal network 경우 해주어야 할 작업들
-      await this._downloadImageFile();
-      await this._sendImageFile();
+      await this.downloadImageFile();
+      await this.sendImageFile();
       // TODO: downloadYamlAtLocal();
       // TODO: sendYaml();
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
@@ -179,14 +179,14 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
 
     if (this.env.registry) {
       // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this._registryWork({
+      await this.registryWork({
         callback
       });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async _downloadImageFile() {
+  protected async downloadImageFile() {
     // TODO: download image file
     console.debug(
       '@@@@@@ Start downloading the image file to client local... @@@@@@'
@@ -196,7 +196,7 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     );
   }
 
-  protected async _sendImageFile() {
+  protected async sendImageFile() {
     console.debug(
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
@@ -212,20 +212,20 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     );
   }
 
-  protected async _registryWork(param: { callback: any }) {
+  protected async registryWork(param: { callback: any }) {
     console.debug(
       '@@@@@@ Start pushing the image at main master node... @@@@@@'
     );
     const { callback } = param;
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getImagePushScript();
+    mainMaster.cmd = this.getImagePushScript();
     await mainMaster.exeCmd(callback);
     console.debug(
       '###### Finish pushing the image at main master node... ######'
     );
   }
 
-  protected _getImagePushScript(): string {
+  protected getImagePushScript(): string {
     let gitPullCommand = `
     mkdir -p ~/${TemplateSeviceBrokerInstaller.IMAGE_HOME};
     export TSB_HOME=~/${TemplateSeviceBrokerInstaller.IMAGE_HOME};

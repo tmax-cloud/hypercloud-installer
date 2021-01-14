@@ -54,7 +54,7 @@ export default class RookCephInstaller extends AbstractInstaller {
     const { isCdi, option, callback, setProgress } = param;
 
     setProgress(10);
-    await this._preWorkInstall({
+    await this.preWorkInstall({
       isCdi,
       callback
     });
@@ -397,22 +397,22 @@ data:
   // }
 
   // protected abstract 구현
-  protected async _preWorkInstall(param: { isCdi?: boolean; callback: any }) {
+  protected async preWorkInstall(param: { isCdi?: boolean; callback: any }) {
     console.debug('@@@@@@ Start pre-installation... @@@@@@');
     const { callback } = param;
     // await this._setNtp(callback);
     await this._installGdisk(callback);
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       // internal network 경우 해주어야 할 작업들
-      await this._downloadImageFile();
-      await this._sendImageFile();
+      await this.downloadImageFile();
+      await this.sendImageFile();
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
       // external network 경우 해주어야 할 작업들
     }
 
     if (this.env.registry) {
       // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this._registryWork({
+      await this.registryWork({
         callback
       });
     }
@@ -421,7 +421,7 @@ data:
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async _downloadImageFile() {
+  protected async downloadImageFile() {
     // TODO: download image file
     console.debug(
       '@@@@@@ Start downloading the image file to client local... @@@@@@'
@@ -431,7 +431,7 @@ data:
     );
   }
 
-  protected async _sendImageFile() {
+  protected async sendImageFile() {
     console.debug(
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
@@ -443,20 +443,20 @@ data:
     );
   }
 
-  protected async _registryWork(param: { callback: any }) {
+  protected async registryWork(param: { callback: any }) {
     console.debug(
       '@@@@@@ Start pushing the image at main master node... @@@@@@'
     );
     const { callback } = param;
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getImagePushScript();
+    mainMaster.cmd = this.getImagePushScript();
     await mainMaster.exeCmd(callback);
     console.debug(
       '###### Finish pushing the image at main master node... ######'
     );
   }
 
-  protected _getImagePushScript(): string {
+  protected getImagePushScript(): string {
     let gitPullCommand = `
     mkdir -p ~/${RookCephInstaller.IMAGE_HOME};
     export ROOK_HOME=~/${RookCephInstaller.IMAGE_HOME};

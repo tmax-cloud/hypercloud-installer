@@ -1,6 +1,7 @@
 // 상수들 저장 객체
 const CONST = {
-  GIT_REPO: 'https://github.com/tmax-cloud/hypercloud-install-guide.git',
+  // GIT_REPO: 'https://github.com/tmax-cloud/hypercloud-install-guide.git',
+  K8S_REPO: 'https://github.com/tmax-cloud/install-k8s.git',
   GIT_BRANCH: '4.1',
   PRODUCT: {
     KUBERNETES: {

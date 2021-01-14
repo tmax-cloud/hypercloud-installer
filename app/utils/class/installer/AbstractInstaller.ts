@@ -27,13 +27,13 @@ export default abstract class AbstractInstaller {
 
   public abstract remove(param?: any): Promise<any>;
 
-  protected abstract _preWorkInstall(param?: any): Promise<any>;
+  protected abstract preWorkInstall(param?: any): Promise<any>;
 
-  protected abstract _downloadImageFile(param?: any): Promise<any>;
+  protected abstract downloadImageFile(param?: any): Promise<any>;
 
-  protected abstract _sendImageFile(param?: any): Promise<any>;
+  protected abstract sendImageFile(param?: any): Promise<any>;
 
-  protected abstract _registryWork(param?: any): Promise<any>;
+  protected abstract registryWork(param?: any): Promise<any>;
 
-  protected abstract _getImagePushScript(param?: any): string;
+  protected abstract getImagePushScript(param?: any): string;
 }
