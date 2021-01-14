@@ -10,7 +10,7 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class CniInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `cni-install`;
+  public static readonly IMAGE_DIR = `install-cni`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-cni`;
 

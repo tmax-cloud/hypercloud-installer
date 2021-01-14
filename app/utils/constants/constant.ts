@@ -3,6 +3,7 @@ const CONST = {
   // GIT_REPO: 'https://github.com/tmax-cloud/hypercloud-install-guide.git',
   K8S_REPO: 'https://github.com/tmax-cloud/install-k8s.git',
   CNI_REPO: 'https://github.com/tmax-cloud/install-cni.git',
+  METAL_LB_REPO: 'https://github.com/tmax-cloud/install-metallb.git',
   GIT_BRANCH: '4.1',
   PRODUCT: {
     KUBERNETES: {

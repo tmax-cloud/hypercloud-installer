@@ -12,7 +12,7 @@ import * as common from '../../common/common';
 import AbstractScript from '../script/AbstractScript';
 
 export default class KubernetesInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `k8s-install`;
+  public static readonly IMAGE_DIR = `install-k8s`;
 
   public static readonly ARCHIVE_DIR = `archive_20.07.10`;
 
