@@ -96,8 +96,8 @@ export default class KubernetesInstaller extends AbstractInstaller {
       await this.downloadImageFile();
       await this.sendImageFile();
 
-      await this._downloadGitFile();
-      await this._sendGitFile();
+      await this.downloadGitFile();
+      await this.sendGitFile();
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
       // external network 경우 해주어야 할 작업들
       /**
@@ -106,7 +106,8 @@ export default class KubernetesInstaller extends AbstractInstaller {
        */
       await this._setPublicPackageRepository(callback);
       await this._installPackage(callback);
-      await this._cloneGitFile(callback);
+
+      await this.cloneGitFile(callback);
     }
 
     if (registry) {
@@ -146,6 +147,47 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug(
       '###### Finish sending the image file to main master node... ######'
     );
+  }
+
+  protected async downloadGitFile() {
+    console.debug(
+      '@@@@@@ Start downloading the GIT file to client local... @@@@@@'
+    );
+    const localPath = `${Env.LOCAL_INSTALL_ROOT}/hypercloud-install-guide/`;
+    console.debug(`repoPath`, CONST.K8S_REPO);
+    console.debug(`localPath`, localPath);
+    await git.clone(CONST.K8S_REPO, localPath, [`-b${CONST.GIT_BRANCH}`]);
+    console.debug(
+      '###### Finish downloading the GIT file to client local... ######'
+    );
+  }
+
+  protected async sendGitFile() {
+    console.debug(
+      '@@@@@@ Start sending the GIT file to each node (using scp)... @@@@@@'
+    );
+    const localPath = `${Env.LOCAL_INSTALL_ROOT}/hypercloud-install-guide/`;
+    const destPath = `${Env.INSTALL_ROOT}/hypercloud-install-guide/`;
+    await Promise.all(
+      this.env.nodeList.map(node => {
+        return scp.sendFile(node, localPath, destPath);
+      })
+    );
+    console.debug(
+      '###### Finish sending the GIT file to each node (using scp)... ######'
+    );
+  }
+
+  protected async cloneGitFile(callback: any) {
+    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
+    await Promise.all(
+      this.env.nodeList.map((node: Node) => {
+        const script = ScriptFactory.createScript(node.os.type);
+        node.cmd = script.cloneGitFile(CONST.K8S_REPO, CONST.GIT_BRANCH);
+        return node.exeCmd(callback);
+      })
+    );
+    console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
   protected async registryWork(param: { registry: any; callback: any }) {
@@ -411,47 +453,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug(
       '###### Finish installing the local package repository at each node... ######'
     );
-  }
-
-  private async _downloadGitFile() {
-    console.debug(
-      '@@@@@@ Start downloading the GIT file to client local... @@@@@@'
-    );
-    const localPath = `${Env.LOCAL_INSTALL_ROOT}/hypercloud-install-guide/`;
-    console.debug(`repoPath`, CONST.K8S_REPO);
-    console.debug(`localPath`, localPath);
-    await git.clone(CONST.K8S_REPO, localPath, [`-b${CONST.GIT_BRANCH}`]);
-    console.debug(
-      '###### Finish downloading the GIT file to client local... ######'
-    );
-  }
-
-  private async _sendGitFile() {
-    console.debug(
-      '@@@@@@ Start sending the GIT file to each node (using scp)... @@@@@@'
-    );
-    const localPath = `${Env.LOCAL_INSTALL_ROOT}/hypercloud-install-guide/`;
-    const destPath = `${Env.INSTALL_ROOT}/hypercloud-install-guide/`;
-    await Promise.all(
-      this.env.nodeList.map(node => {
-        return scp.sendFile(node, localPath, destPath);
-      })
-    );
-    console.debug(
-      '###### Finish sending the GIT file to each node (using scp)... ######'
-    );
-  }
-
-  private async _cloneGitFile(callback: any) {
-    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
-    await Promise.all(
-      this.env.nodeList.map((node: Node) => {
-        const script = ScriptFactory.createScript(node.os.type);
-        node.cmd = script.cloneGitFile(CONST.K8S_REPO, CONST.GIT_BRANCH);
-        return node.exeCmd(callback);
-      })
-    );
-    console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
   private async _installPackage(callback: any) {

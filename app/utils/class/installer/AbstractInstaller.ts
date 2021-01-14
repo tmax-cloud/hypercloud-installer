@@ -33,6 +33,12 @@ export default abstract class AbstractInstaller {
 
   protected abstract sendImageFile(param?: any): Promise<any>;
 
+  protected abstract downloadGitFile(param?: any): Promise<any>;
+
+  protected abstract sendGitFile(param?: any): Promise<any>;
+
+  protected abstract cloneGitFile(param?: any): Promise<any>;
+
   protected abstract registryWork(param?: any): Promise<any>;
 
   protected abstract getImagePushScript(param?: any): string;
