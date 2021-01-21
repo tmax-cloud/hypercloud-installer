@@ -3,11 +3,13 @@
 import * as scp from '../../common/scp';
 import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
+import ScriptFactory from '../script/ScriptFactory';
+import CONST from '../../constants/constant';
 
 export default class CatalogControllerInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `catalog-controller-install`;
+  public static readonly IMAGE_DIR = `install-catalog`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/hypercloud-install-guide/CatalogController`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-catalog`;
 
   public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${CatalogControllerInstaller.IMAGE_DIR}`;
 
@@ -27,6 +29,9 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
     return this.instance;
   }
 
+  /**
+   * abstract 메서드 구현부
+   */
   public async install(param: { callback: any; setProgress: Function }) {
     const { callback, setProgress } = param;
 
@@ -41,6 +46,126 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
 
   public async remove() {
     await this._removeMainMaster();
+  }
+
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    // await this._copyFile(callback);
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      /**
+       * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
+       * 2. git guide 다운(client 로컬), 전송(각 노드)
+       */
+      await this.downloadImageFile();
+      await this.sendImageFile();
+
+      await this.downloadGitFile();
+      await this.sendGitFile();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      /**
+       * 1. public 패키지 레포 등록, 설치 (각 노드) (필요 시)
+       * 2. git guide clone (마스터 노드)
+       */
+      await this.cloneGitFile(callback);
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      /**
+       * 1. 레지스트리 관련 작업
+       */
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CatalogControllerInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${CatalogControllerInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async cloneGitFile(callback: any) {
+    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = script.cloneGitFile(CONST.CATALOG_REPO, CONST.GIT_BRANCH);
+    await mainMaster.exeCmd(callback);
+    console.debug('###### Finish clone the GIT file at each node... ######');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+  mkdir -p ~/${CatalogControllerInstaller.IMAGE_HOME};
+  export CATALOG_HOME=~/${CatalogControllerInstaller.IMAGE_HOME};
+  export CATALOG_VERSION=v${CatalogControllerInstaller.VERSION};
+  export REGISTRY=${this.env.registry};
+  cd $CATALOG_HOME;
+  `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+    docker load < service-catalog_v\${CATALOG_VERSION}.tar
+    `;
+    } else {
+      gitPullCommand += `
+    docker pull quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
+
+    #docker save quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION} > service-catalog_v\${CATALOG_VERSION}.tar
+    `;
+    }
+    return `
+    ${gitPullCommand}
+    docker tag quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION} \${REGISTRY}/quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
+
+    docker push \${REGISTRY}/quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
+    #rm -rf $CATALOG_HOME;
+    `;
   }
 
   private async _installMainMaster(callback: any) {
@@ -76,14 +201,14 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
 
   private _step1() {
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
     kubectl apply -f crds/
     `;
   }
 
   private _step2() {
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
     kubectl create namespace catalog;
     kubectl apply -f serviceaccounts.yaml;
     kubectl apply -f rbac.yaml;
@@ -99,7 +224,7 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
     }
 
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
     ${script}
     kubectl apply -f controller-manager-deployment.yaml;
     kubectl apply -f controller-manager-service.yaml;
@@ -108,7 +233,7 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
 
   private _step4() {
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/ca;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest/ca;
     openssl genrsa -out rootca.key 2048;
     openssl req -x509 -new -nodes -key rootca.key -sha256 -days 3650 -subj /C=KO/ST=None/L=None/O=None/CN=catalog-catalog-webhook -out rootca.crt;
     openssl req -new -newkey rsa:2048 -sha256 -nodes -keyout server.key -subj /C=KO/ST=None/L=None/O=None/CN=catalog-catalog-webhook -out server.csr;
@@ -121,11 +246,11 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
 
   private _step5() {
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/ca;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest/ca;
     export key0=\`cat key0 | tr -d '\\n'\`;
     export cert=\`cat cert | tr -d '\\n'\`;
     export key=\`cat key | tr -d '\\n'\`;
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
     sed -i "s/{{ b64enc \\$ca.Cert }}/$key0/g" webhook-register.yaml;
     sed -i "s/{{ b64enc \\$cert.Cert }}/$cert/g" webhook-register.yaml;
     sed -i "s/{{ b64enc \\$cert.Key }}/$key/g" webhook-register.yaml;
@@ -146,7 +271,7 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     // 설치의 역순
     return `
-    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
+    cd ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
     kubectl delete -f webhook-service.yaml;
     kubectl delete -f webhook-deployment.yaml;
     kubectl delete -f webhook-register.yaml;
@@ -159,6 +284,7 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
     kubectl delete namespace catalog;
 
     kubectl delete -f crds/
+    rm -rf ~/${CatalogControllerInstaller.INSTALL_HOME};
     `;
   }
 
@@ -176,105 +302,13 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
   //   console.debug('###### Finish download yaml file from external... ######');
   // }
 
-  private async _copyFile(callback: any) {
-    console.debug('@@@@@@ Start copy yaml file... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = `
-    \\cp -r ~/${CatalogControllerInstaller.INSTALL_HOME}/yaml_install ~/${CatalogControllerInstaller.INSTALL_HOME}/yamlCopy;
-    `;
-    await mainMaster.exeCmd(callback);
-    console.debug('###### Finish copy yaml file... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    await this._copyFile(callback);
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-      // TODO: downloadYamlAtLocal();
-      // TODO: sendYaml();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-      // await this._downloadYaml();
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CatalogControllerInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${CatalogControllerInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${CatalogControllerInstaller.IMAGE_HOME};
-    export CATALOG_HOME=~/${CatalogControllerInstaller.IMAGE_HOME};
-    export CATALOG_VERSION=v${CatalogControllerInstaller.VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $CATALOG_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      docker load < service-catalog_v\${CATALOG_VERSION}.tar
-      `;
-    } else {
-      gitPullCommand += `
-      docker pull quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
-
-      #docker save quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION} > service-catalog_v\${CATALOG_VERSION}.tar
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      docker tag quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION} \${REGISTRY}/quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
-
-      docker push \${REGISTRY}/quay.io/kubernetes-service-catalog/service-catalog:v\${CATALOG_VERSION}
-      #rm -rf $CATALOG_HOME;
-      `;
-  }
+  // private async _copyFile(callback: any) {
+  //   console.debug('@@@@@@ Start copy yaml file... @@@@@@');
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = `
+  //   \\cp -r ~/${CatalogControllerInstaller.INSTALL_HOME}/yaml_install ~/${CatalogControllerInstaller.INSTALL_HOME}/manifest;
+  //   `;
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug('###### Finish copy yaml file... ######');
+  // }
 }

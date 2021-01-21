@@ -3,7 +3,7 @@
 import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import * as scp from '../../common/scp';
-import Node from '../Node';
+import Node, { ROLE } from '../Node';
 import * as ssh from '../../common/ssh';
 import * as git from '../../common/git';
 import CONST from '../../constants/constant';
@@ -255,6 +255,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
   /**
    * public 메서드
    */
+  public async addWorker(registry: string, version: string, callback?: any) {
+    await this._envSetting({ callback });
+    await this.preWorkInstall({ callback });
+    await this._installWorker(registry, version, callback);
+  }
+
   public async addMaster(registry: string, version: string, callback?: any) {
     await this._envSetting({ callback });
     await this.preWorkInstall({ callback });
@@ -278,12 +284,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
       worker.exeCmd();
     });
     console.debug('###### Finish deleting Worker... ######');
-  }
-
-  public async addWorker(registry: string, version: string, callback?: any) {
-    await this._envSetting({ callback });
-    await this.preWorkInstall({ callback });
-    await this._installWorker(registry, version, callback);
   }
 
   public async deleteMaster() {
@@ -583,14 +583,13 @@ export default class KubernetesInstaller extends AbstractInstaller {
   }
 
   private async _makeMasterCanSchedule() {
-    // return `kubectl taint node ${hostName} node-role.kubernetes.io/master:NoSchedule-;`;
     const { mainMaster, masterArr } = this.env.getNodesSortedByRole();
     const masterNodeArr = [...masterArr, mainMaster];
     let script = '';
-    masterNodeArr.map(masterNode => {
-      script += `
-      kubectl taint node ${masterNode.hostName} node-role.kubernetes.io/master:NoSchedule-;
-      `;
+    masterNodeArr.forEach(masterNode => {
+      script += AbstractScript.removeTaintNoScheduleByHostName(
+        masterNode.hostName
+      );
     });
 
     mainMaster.cmd = script;
@@ -612,7 +611,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
   }
 
   private async _getMasterJoinCmd(mainMaster: Node) {
-    const script = ScriptFactory.createScript(mainMaster.os.type);
     mainMaster.cmd = AbstractScript.getK8sClusterMasterJoinScript();
     let masterJoinCmd = '';
     await ssh.send(mainMaster, {

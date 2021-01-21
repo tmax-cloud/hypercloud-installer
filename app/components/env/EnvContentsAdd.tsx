@@ -770,7 +770,10 @@ function EnvContentsAdd(props: any) {
                             ) {
                               os = new CentOS();
                             } else {
-                              os = new Ubuntu();
+                              throw new Error(
+                                '현재 지원되지 않는 OS type 입니다.'
+                              );
+                              // os = new Ubuntu();
                             }
                           },
                           stderr: () => {}

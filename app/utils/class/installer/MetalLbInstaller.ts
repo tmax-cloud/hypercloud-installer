@@ -230,6 +230,7 @@ export default class MetalLbInstaller extends AbstractInstaller {
     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
     kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
     kubectl delete -f metallb_cidr.yaml;
+    rm -rf ~/${MetalLbInstaller.INSTALL_HOME};
     `;
   }
 

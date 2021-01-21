@@ -1,3 +1,4 @@
+import CniInstaller from '../installer/CniInstaller';
 import KubernetesInstaller from '../installer/KubernetesInstaller';
 import Node from '../Node';
 
@@ -6,6 +7,12 @@ export default abstract class AbstractScript {
   /**
    * OS 디펜던시가 없는 스크립트들은 이곳에 만든다.
    */
+  static removeTaintNoScheduleByHostName(hostName: string) {
+    return `
+    kubectl taint node ${hostName} node-role.kubernetes.io/master:NoSchedule-;
+    `;
+  }
+
   static setK8sConfig(
     registry: string,
     version: string,

@@ -55,7 +55,7 @@ export default class CniInstaller extends AbstractInstaller {
     setProgress(100);
   }
 
-  public async remove(param: { type: any }) {
+  public async remove() {
     await this._removeMainMaster();
   }
 
