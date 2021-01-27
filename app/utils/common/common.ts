@@ -39,7 +39,11 @@ export function ChangeByteToGigaByte(byte: number) {
  *
  * @return
  */
-export async function waitApiServerUntilNormal(mainMaster: Node) {
+export async function waitApiServerUntilNormal(
+  mainMaster: Node,
+  limitCount = 30,
+  milisecondPerCount = 6000
+) {
   return new Promise(resolve => {
     let count = 0;
     const timerid = setInterval(async () => {
@@ -49,7 +53,7 @@ export async function waitApiServerUntilNormal(mainMaster: Node) {
       echo $?;
       `;
       count += 1;
-      if (count > 30) {
+      if (count > limitCount) {
         // 30번 이상 요청 시 timeout (6초 x 30번 = 3분)
         clearInterval(timerid);
         resolve();
@@ -67,7 +71,7 @@ export async function waitApiServerUntilNormal(mainMaster: Node) {
       }
       console.log(count);
       // 6초마다
-    }, 6000);
+    }, milisecondPerCount);
   });
 }
 

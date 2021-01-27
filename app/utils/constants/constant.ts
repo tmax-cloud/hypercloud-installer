@@ -6,6 +6,7 @@ const CONST = {
   METAL_LB_REPO: 'https://github.com/tmax-cloud/install-metallb.git',
   PROMETHEUS_REPO: 'https://github.com/tmax-cloud/install-prometheus.git',
   CATALOG_REPO: 'https://github.com/tmax-cloud/install-catalog.git',
+  HYPERAUTH_REPO: 'https://github.com/tmax-cloud/install-hyperauth.git',
   GIT_BRANCH: '4.1',
   PRODUCT: {
     KUBERNETES: {
