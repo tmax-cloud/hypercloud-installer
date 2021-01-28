@@ -54,9 +54,9 @@ function InstallContentsHyperCloudAlready(props: any) {
     console.debug(`nowEnv`, nowEnv);
 
     // console delete
-    const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
-    hyperCloudConsoleInstaller.env = nowEnv;
-    await hyperCloudConsoleInstaller.remove();
+    // const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
+    // hyperCloudConsoleInstaller.env = nowEnv;
+    // await hyperCloudConsoleInstaller.remove();
 
     // webhook delete
     const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;

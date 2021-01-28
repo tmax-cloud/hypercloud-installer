@@ -8,6 +8,10 @@ const CONST = {
   PROMETHEUS_REPO: 'https://github.com/tmax-cloud/install-prometheus.git',
   CATALOG_REPO: 'https://github.com/tmax-cloud/install-catalog.git',
   HYPERAUTH_REPO: 'https://github.com/tmax-cloud/install-hyperauth.git',
+  INGRESS_REPO: 'https://github.com/tmax-cloud/install-ingress.git',
+  HYPERCLOUD_REPO: 'https://github.com/tmax-cloud/install-hypercloud.git',
+  SECRET_WATCHER_REPO:
+    'https://github.com/tmax-cloud/install-secretwatcher.git',
   GIT_BRANCH: '4.1',
   PRODUCT: {
     KUBERNETES: {

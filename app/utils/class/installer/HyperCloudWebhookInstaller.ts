@@ -6,15 +6,17 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import * as Common from '../../common/common';
 import Node from '../Node';
+import ScriptFactory from '../script/ScriptFactory';
+import CONST from '../../constants/constant';
 
 export default class HyperCloudWebhookInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `hypercloud-webhook-install`;
+  public static readonly IMAGE_DIR = `install-hypercloud`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/hypercloud-install-guide/HyperCloud\\ Webhook`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-hypercloud`;
 
   public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${HyperCloudWebhookInstaller.IMAGE_DIR}`;
 
-  public static readonly WEBHOOK_VERSION = `4.1.0.22`;
+  public static readonly HPCD_WEBHOOK_VERSION = `4.1.0.22`;
 
   // singleton
   private static instance: HyperCloudWebhookInstaller;
@@ -30,6 +32,9 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
     return this.instance;
   }
 
+  /**
+   * abstract 메서드 구현부
+   */
   public async install(param: { callback: any; setProgress: Function }) {
     const { callback } = param;
 
@@ -44,27 +49,143 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
     await this._removeMainMaster();
   }
 
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      /**
+       * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
+       * 2. git guide 다운(client 로컬), 전송(각 노드)
+       */
+      await this.downloadImageFile();
+      await this.sendImageFile();
+
+      await this.downloadGitFile();
+      await this.sendGitFile();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      /**
+       * 1. public 패키지 레포 등록, 설치 (각 노드) (필요 시)
+       * 2. git guide clone (마스터 노드)
+       */
+      await this.cloneGitFile(callback);
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      /**
+       * 1. 레지스트리 관련 작업
+       */
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudWebhookInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${HyperCloudWebhookInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async cloneGitFile(callback: any) {
+    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = script.cloneGitFile(
+      CONST.HYPERCLOUD_REPO,
+      CONST.GIT_BRANCH
+    );
+    await mainMaster.exeCmd(callback);
+    console.debug('###### Finish clone the GIT file at each node... ######');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+  mkdir -p ~/${HyperCloudWebhookInstaller.IMAGE_HOME};
+  export WEBHOOK_HOME=~/${HyperCloudWebhookInstaller.IMAGE_HOME};
+  export HPCD_WEBHOOK_VERSION=${HyperCloudWebhookInstaller.HPCD_WEBHOOK_VERSION};
+  export REGISTRY=${this.env.registry};
+  cd $WEBHOOK_HOME;
+  `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+    sudo docker load < hypercloud-webhook_b\${HPCD_WEBHOOK_VERSION}.tar;
+    `;
+    } else {
+      gitPullCommand += `
+    sudo docker pull tmaxcloudck/hypercloud-webhook:b\${HPCD_WEBHOOK_VERSION};
+    `;
+    }
+    return `
+    ${gitPullCommand}
+    sudo docker tag tmaxcloudck/hypercloud-webhook:b\${HPCD_WEBHOOK_VERSION} \${REGISTRY}/hypercloud-webhook:b\${HPCD_WEBHOOK_VERSION};
+
+    sudo docker push \${REGISTRY}/hypercloud-webhook:b\${HPCD_WEBHOOK_VERSION}
+    #rm -rf $WEBHOOK_HOME;
+    `;
+  }
+
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing webhook main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-
-    // Step 0. hypercloud-webhook yaml 수정
-    mainMaster.cmd = this._step0();
-    await mainMaster.exeCmd(callback);
 
     // Step 1. Secret 생성
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
-    // Step 2. HyperCloud Webhook Server 설치
+    // Step 2. hypercloud-webhook yaml 수정
     mainMaster.cmd = this._step2();
     await mainMaster.exeCmd(callback);
 
-    // Step 3. HyperCloud Webhook Config 생성
+    // Step 3. HyperCloud Webhook Server 배포
     mainMaster.cmd = this._step3();
     await mainMaster.exeCmd(callback);
 
-    // Step 4. HyperCloud Webhook Config 적용
+    // Step 4. HyperCloud Webhook Config 생성 및 적용
     mainMaster.cmd = this._step4();
     await mainMaster.exeCmd(callback);
 
@@ -86,66 +207,60 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
     console.debug('###### Finish installing webhook main Master... ######');
   }
 
-  private _step0() {
-    let script = `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    export WEBHOOK_VERSION=${HyperCloudWebhookInstaller.WEBHOOK_VERSION};
-
-    sed -i 's/{webhook_version}/'b\${WEBHOOK_VERSION}'/g' 02_webhook-deployment.yaml;
-    sed -i 's/{hostname}/'\${HOSTNAME}'/g' 02_webhook-deployment.yaml;
-    `;
-
-    if (this.env.registry) {
-      script += `
-      sed -i 's/tmaxcloudck\\/hypercloud-webhook/'\${REGISTRY}'\\/hypercloud-webhook/g' 02_webhook-deployment.yaml;
-      `;
-    }
-    return script;
-  }
-
   private _step1() {
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    sh 01_create_secret.sh;
+    ${this._exportEnv()}
+    cd \${HPCD_HOME}
+    mv manifest/hypercloud-webhook manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}
+    kubectl -n hypercloud4-system create secret generic hypercloud4-webhook-certs --from-file=\${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/pki/hypercloud4-webhook.jks
     `;
   }
 
   private _step2() {
-    let script = `cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;`;
+    let script = `
+    ${this._exportEnv()}
+    sed -i 's/{HPCD_WEBHOOK_VERSION}/b'\${HPCD_WEBHOOK_VERSION}'/g'  \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/01_webhook-deployment.yaml
+    `;
+
+    if (this.env.registry) {
+      script += `
+      sed -i 's/tmaxcloudck\\/hypercloud-webhook/'\${REGISTRY}'\\/tmaxcloudck\\/hypercloud-webhook/g' \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/01_webhook-deployment.yaml
+      `;
+    }
+    return script;
+  }
+
+  private _step3() {
+    let script = `${this._exportEnv()}`;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
       script += `
-      sed -i 's/memory: "1Gi"/memory: "500Mi"/g' 02_webhook-deployment.yaml;
+      sed -i 's/memory: "1Gi"/memory: "500Mi"/g' \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/01_webhook-deployment.yaml;
       `;
     }
     script += `
-    kubectl apply -f 02_webhook-deployment.yaml;
+    kubectl apply -f  \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/01_webhook-deployment.yaml;
     `;
 
     return script;
   }
 
-  private _step3() {
-    return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    sh 03_gen-webhook-config.sh;
-    `;
-  }
-
   private _step4() {
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    kubectl apply -f 04_webhook-configuration.yaml;
+    ${this._exportEnv()}
+    chmod +x \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/*.sh
+    sh  \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/02_gen-webhook-config.sh
+    kubectl apply -f  \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/03_webhook-configuration.yaml
     `;
   }
 
   private _step5() {
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    sh 05_gen-audit-config.sh;
-    cp 06_audit-webhook-config /etc/kubernetes/pki/audit-webhook-config;
-    cp 07_audit-policy.yaml /etc/kubernetes/pki/audit-policy.yaml;
+    ${this._exportEnv()}
+    sh \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/04_gen-audit-config.sh
+    cp \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/05_audit-webhook-config /etc/kubernetes/pki/audit-webhook-config
+    cp \${HPCD_HOME}/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION}/06_audit-policy.yaml /etc/kubernetes/pki/audit-policy.yaml
     `;
   }
 
@@ -154,13 +269,16 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
     let copyScript = '';
     masterArr.map(master => {
       copyScript += `
-      sshpass -p '${master.password}' scp -P ${master.port} -o StrictHostKeyChecking=no ./06_audit-webhook-config ${master.user}@${master.ip}:/etc/kubernetes/pki/audit-webhook-config;
-      sshpass -p '${master.password}' scp -P ${master.port} -o StrictHostKeyChecking=no ./07_audit-policy.yaml ${master.user}@${master.ip}:/etc/kubernetes/pki/audit-policy.yaml;
+      sshpass -p '${master.password}' scp -P ${master.port} -o StrictHostKeyChecking=no ./05_audit-webhook-config ${master.user}@${master.ip}:/etc/kubernetes/pki/audit-webhook-config;
+      sshpass -p '${master.password}' scp -P ${master.port} -o StrictHostKeyChecking=no ./06_audit-policy.yaml ${master.user}@${master.ip}:/etc/kubernetes/pki/audit-policy.yaml;
       `;
     });
 
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
+    ${this._exportEnv()}
+    cd ~/${
+      HyperCloudWebhookInstaller.INSTALL_HOME
+    }/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION};
     ${copyScript}
     `;
   }
@@ -235,8 +353,34 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
 
   private _step7() {
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    kubectl apply -f test-yaml/namespaceclaim.yaml;
+    # cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifest/hypercloud-webhook;
+    # kubectl apply -f test-yaml/namespaceclaim.yaml;
+    `;
+  }
+
+  private _exportEnv() {
+    return `
+    export HPCD_HOME=~/${HyperCloudWebhookInstaller.INSTALL_HOME};
+    export HPCD_WEBHOOK_VERSION=${HyperCloudWebhookInstaller.HPCD_WEBHOOK_VERSION};
+    export REGISTRY=${this.env.registry};
+    `;
+  }
+
+  private async _removeMainMaster() {
+    console.debug('@@@@@@ Start remove webhook main Master... @@@@@@');
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this._getRemoveScript();
+    await mainMaster.exeCmd();
+    console.debug('###### Finish remove webhook main Master... ######');
+  }
+
+  private _getRemoveScript(): string {
+    // hypercloud operator 삭제 할 때, git repo 폴더 삭제
+    return `
+    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifest/hypercloud-webhook;
+    # kubectl delete -f test-yaml/namespaceclaim.yaml;
+    kubectl delete -f 03_webhook-configuration.yaml;
+    kubectl delete -f 01_webhook-deployment.yaml;
     `;
   }
 
@@ -273,109 +417,5 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
         await node.exeCmd();
       })
     );
-  }
-
-  private async _removeMainMaster() {
-    console.debug('@@@@@@ Start remove webhook main Master... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getRemoveScript();
-    await mainMaster.exeCmd();
-    console.debug('###### Finish remove webhook main Master... ######');
-  }
-
-  private _getRemoveScript(): string {
-    return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifests;
-    kubectl delete -f test-yaml/namespaceclaim.yaml;
-    kubectl delete -f 04_webhook-configuration.yaml;
-    kubectl delete -f 02_webhook-deployment.yaml;
-    #rm -rf ~/${HyperCloudWebhookInstaller.INSTALL_HOME};
-    `;
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudWebhookInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${HyperCloudWebhookInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${HyperCloudWebhookInstaller.IMAGE_HOME};
-    export WEBHOOK_HOME=~/${HyperCloudWebhookInstaller.IMAGE_HOME};
-    export WEBHOOK_VERSION=${HyperCloudWebhookInstaller.WEBHOOK_VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $WEBHOOK_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < hypercloud-webhook_b\${WEBHOOK_VERSION}.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull tmaxcloudck/hypercloud-webhook:b\${WEBHOOK_VERSION};
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag tmaxcloudck/hypercloud-webhook:b\${WEBHOOK_VERSION} \${REGISTRY}/hypercloud-webhook:b\${WEBHOOK_VERSION};
-
-      sudo docker push \${REGISTRY}/hypercloud-webhook:b\${WEBHOOK_VERSION}
-      #rm -rf $WEBHOOK_HOME;
-      `;
   }
 }

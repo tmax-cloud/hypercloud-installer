@@ -6,15 +6,17 @@ import Env, { NETWORK_TYPE } from '../Env';
 import SecretWatcherInstaller from './SecretWatcherInstaller';
 import IngressControllerSharedInstaller from './IngressControllerSharedInstaller';
 import IngressControllerSystemInstaller from './IngressControllerSystemInstaller';
+import ScriptFactory from '../script/ScriptFactory';
+import CONST from '../../constants/constant';
 
 export default class HyperCloudOperatorInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `hypercloud-operator-install`;
+  public static readonly IMAGE_DIR = `install-hypercloud`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}`;
 
   public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}`;
 
-  public static readonly HPCD_VERSION = `4.1.4.7`;
+  public static readonly HPCD_VERSION = `4.1.9.2`;
 
   // singleton
   private static instance: HyperCloudOperatorInstaller;
@@ -30,6 +32,9 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     return this.instance;
   }
 
+  /**
+   * abstract 메서드 구현부
+   */
   public async install(param: {
     state: any;
     callback: any;
@@ -41,26 +46,27 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
       callback
     });
 
-    if (state.isUseIngress) {
-      if (state.sharedIngress) {
-        const ingressControllerSharedInstaller =
-          IngressControllerSharedInstaller.getInstance;
-        ingressControllerSharedInstaller.env = this.env;
-        await ingressControllerSharedInstaller.install({
-          callback,
-          setProgress
-        });
-      }
-      if (state.systemIngress) {
-        const ingressControllerSystemInstaller =
-          IngressControllerSystemInstaller.getInstance;
-        ingressControllerSystemInstaller.env = this.env;
-        await ingressControllerSystemInstaller.install({
-          callback,
-          setProgress
-        });
-      }
-    }
+    // ingress 설치
+    // if (state.isUseIngress) {
+    //   if (state.sharedIngress) {
+    //     const ingressControllerSharedInstaller =
+    //       IngressControllerSharedInstaller.getInstance;
+    //     ingressControllerSharedInstaller.env = this.env;
+    //     await ingressControllerSharedInstaller.install({
+    //       callback,
+    //       setProgress
+    //     });
+    //   }
+    //   if (state.systemIngress) {
+    //     const ingressControllerSystemInstaller =
+    //       IngressControllerSystemInstaller.getInstance;
+    //     ingressControllerSystemInstaller.env = this.env;
+    //     await ingressControllerSystemInstaller.install({
+    //       callback,
+    //       setProgress
+    //     });
+    //   }
+    // }
 
     // operator 설치
     await this._installMainMaster(state, callback);
@@ -95,6 +101,137 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     await ingressControllerSharedInstaller.remove();
   }
 
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      /**
+       * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
+       * 2. git guide 다운(client 로컬), 전송(각 노드)
+       */
+      await this.downloadImageFile();
+      await this.sendImageFile();
+
+      await this.downloadGitFile();
+      await this.sendGitFile();
+      // TODO: downloadYamlAtLocal();
+      // TODO: sendYaml();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      /**
+       * 1. public 패키지 레포 등록, 설치 (각 노드) (필요 시)
+       * 2. git guide clone (마스터 노드)
+       */
+      await this.cloneGitFile(callback);
+      await this._downloadYaml();
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${HyperCloudOperatorInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async cloneGitFile(callback: any) {
+    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = script.cloneGitFile(
+      CONST.HYPERCLOUD_REPO,
+      CONST.GIT_BRANCH
+    );
+    await mainMaster.exeCmd(callback);
+    console.debug('###### Finish clone the GIT file at each node... ######');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+  mkdir -p ~/${HyperCloudOperatorInstaller.IMAGE_HOME};
+  export HPCD_HOME=~/${HyperCloudOperatorInstaller.IMAGE_HOME};
+  export HPCD_VERSION=${HyperCloudOperatorInstaller.HPCD_VERSION};
+  export REGISTRY=${this.env.registry};
+  cd $HPCD_HOME;
+  `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+    sudo docker load < mysql_5.6.tar;
+    sudo docker load < registry_2.6.2.tar;
+    sudo docker load < hypercloud-operator_b\${HPCD_VERSION}.tar;
+    `;
+    } else {
+      gitPullCommand += `
+    sudo docker pull mysql:5.6;
+    sudo docker pull registry:2.6.2;
+    sudo docker pull tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION};
+    `;
+    }
+    return `
+    ${gitPullCommand}
+    sudo docker tag mysql:5.6 \${REGISTRY}/mysql:5.6
+    sudo docker tag registry:2.6.2 \${REGISTRY}/registry:2.6.2
+    sudo docker tag tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
+
+    sudo docker push \${REGISTRY}/mysql:5.6
+    sudo docker push \${REGISTRY}/registry:2.6.2
+    sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
+    #rm -rf $HPCD_HOME;
+    `;
+  }
+
+  /**
+   * private 메서드
+   */
   private async _installMainMaster(state: any, callback: any) {
     console.debug(
       '@@@@@@ Start installing hypercloud operator main Master... @@@@@@'
@@ -136,7 +273,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
   private _step0() {
     let script = `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     tar -xzf hypercloud-operator.tar.gz;
 
     sed -i 's/{HPCD_VERSION}/'b${HyperCloudOperatorInstaller.HPCD_VERSION}'/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
@@ -154,14 +291,14 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
   private _step1() {
     return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/1.initialization.yaml;
     `;
   }
 
   private _step2() {
     return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UserCRD.yaml;
     # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UsergroupCRD.yaml;
     # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/TokenCRD.yaml;
@@ -180,13 +317,13 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
   private _step3() {
     return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/2.mysql-settings.yaml;
     `;
   }
 
   private _step4() {
-    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};`;
+    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;`;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
@@ -203,7 +340,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
   }
 
   private _step5() {
-    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};`;
+    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;`;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
@@ -225,7 +362,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     const newEmail = state.email;
 
     return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     sed -i 's/${targetEmail}/${newEmail}/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
     kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
     `;
@@ -245,7 +382,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
   private _getRemoveScript(): string {
     return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
 
     kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
@@ -270,7 +407,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
     kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/1.initialization.yaml;
 
-    #rm -rf ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    rm -rf ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
     `;
   }
 
@@ -278,108 +415,11 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start download yaml file from external... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     mainMaster.cmd = `
-    mkdir -p ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
+    mkdir -p ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
+    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
     wget -O hypercloud-operator.tar.gz https://github.com/tmax-cloud/hypercloud-operator/archive/v${HyperCloudOperatorInstaller.HPCD_VERSION}.tar.gz;
     `;
     await mainMaster.exeCmd();
     console.debug('###### Finish download yaml file from external... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-      // TODO: downloadYamlAtLocal();
-      // TODO: sendYaml();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-      await this._downloadYaml();
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${HyperCloudOperatorInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${HyperCloudOperatorInstaller.IMAGE_HOME};
-    export HPCD_HOME=~/${HyperCloudOperatorInstaller.IMAGE_HOME};
-    export HPCD_VERSION=${HyperCloudOperatorInstaller.HPCD_VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $HPCD_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < mysql_5.6.tar;
-      sudo docker load < registry_2.6.2.tar;
-      sudo docker load < hypercloud-operator_b\${HPCD_VERSION}.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull mysql:5.6;
-      sudo docker pull registry:2.6.2;
-      sudo docker pull tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION};
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag mysql:5.6 \${REGISTRY}/mysql:5.6
-      sudo docker tag registry:2.6.2 \${REGISTRY}/registry:2.6.2
-      sudo docker tag tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
-
-      sudo docker push \${REGISTRY}/mysql:5.6
-      sudo docker push \${REGISTRY}/registry:2.6.2
-      sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
-      #rm -rf $HPCD_HOME;
-      `;
   }
 }

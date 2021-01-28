@@ -19,7 +19,7 @@ function InstallContentsHyperCloud(props: any) {
 
   const [state, setState] = useState({
     operator_version: HyperCloudOperatorInstaller.HPCD_VERSION,
-    webhook_version: HyperCloudWebhookInstaller.WEBHOOK_VERSION,
+    webhook_version: HyperCloudWebhookInstaller.HPCD_WEBHOOK_VERSION,
     console_version: HyperCloudConsoleInstaller.CONSOLE_VERSION,
     isUseIngress: true,
     sharedIngress: true,
