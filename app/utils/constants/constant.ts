@@ -4,6 +4,7 @@ const CONST = {
   K8S_REPO: 'https://github.com/tmax-cloud/install-k8s.git',
   CNI_REPO: 'https://github.com/tmax-cloud/install-cni.git',
   METAL_LB_REPO: 'https://github.com/tmax-cloud/install-metallb.git',
+  ROOK_CEPH_REPO: 'https://github.com/tmax-cloud/install-rookceph.git',
   PROMETHEUS_REPO: 'https://github.com/tmax-cloud/install-prometheus.git',
   CATALOG_REPO: 'https://github.com/tmax-cloud/install-catalog.git',
   HYPERAUTH_REPO: 'https://github.com/tmax-cloud/install-hyperauth.git',

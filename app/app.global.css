@@ -24,13 +24,13 @@
   --global-color-white: white;
   --global-color-gray: #536882;
 
-  --global-color-primary: #0992ac;
-  --global-color-primary-hover: #067c92;
-  --global-color-primary-active: #046a7d;
+  --global-color-primary: #ec3854;
+  --global-color-primary-hover: #d22d46;
+  --global-color-primary-active: #ba2e44;
 
-  --global-color-secondary: #ffffff;
-  --global-color-secondary-hover: #e9f0f8;
-  --global-color-secondary-active: #dde8f7;
+  --global-color-secondary: #1e6cb9;
+  --global-color-secondary-hover: #175b9e;
+  --global-color-secondary-active: #0f4b86;
 
   /* table */
   --table-color-primary: #31475e;

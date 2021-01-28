@@ -9,7 +9,7 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class MetalLbInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `metallb-install`;
+  public static readonly IMAGE_DIR = `install-metallb`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-metallb`;
 
