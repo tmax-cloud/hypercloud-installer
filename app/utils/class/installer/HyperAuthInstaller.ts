@@ -8,17 +8,18 @@ import ScriptFactory from '../script/ScriptFactory';
 
 import * as Common from '../../common/common';
 import Node from '../Node';
+import CONST from '../../constants/constant';
 
 export default class HyperAuthInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `hyperauth-install`;
+  public static readonly IMAGE_DIR = `install-hyperauth`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/hypercloud-install-guide/HyperAuth`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-hyperauth`;
 
   public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${HyperAuthInstaller.IMAGE_DIR}`;
 
   public static readonly POSTGRES_VERSION = `9.6.2-alpine`;
 
-  public static readonly HYPERAUTH_VERSION = `1.0.5.6`;
+  public static readonly HYPERAUTH_VERSION = `1.0.11.5`;
 
   // singleton
   private static instance: HyperAuthInstaller;
@@ -34,6 +35,9 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     return this.instance;
   }
 
+  /**
+   * abstract 메서드 구현부
+   */
   public async install(param: { callback: any; setProgress: Function }) {
     const { callback, setProgress } = param;
 
@@ -48,6 +52,134 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
   public async remove() {
     await this._removeMainMaster();
+  }
+
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    // await this._copyFile(callback);
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      /**
+       * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
+       * 2. git guide 다운(client 로컬), 전송(각 노드)
+       */
+      await this.downloadImageFile();
+      await this.sendImageFile();
+
+      await this.downloadGitFile();
+      await this.sendGitFile();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      /**
+       * 1. public 패키지 레포 등록, 설치 (각 노드) (필요 시)
+       * 2. git guide clone (마스터 노드)
+       */
+      await this.cloneGitFile(callback);
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      /**
+       * 1. 레지스트리 관련 작업
+       */
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperAuthInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${HyperAuthInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async cloneGitFile(callback: any) {
+    console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = script.cloneGitFile(
+      CONST.HYPERAUTH_REPO,
+      CONST.GIT_BRANCH
+    );
+    await mainMaster.exeCmd(callback);
+    console.debug('###### Finish clone the GIT file at each node... ######');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+    mkdir -p ~/${HyperAuthInstaller.IMAGE_HOME};
+    export HYPERAUTH_HOME=~/${HyperAuthInstaller.IMAGE_HOME};
+    export POSTGRES_VERSION=${HyperAuthInstaller.POSTGRES_VERSION};
+    export HYPERAUTH_VERSION=${HyperAuthInstaller.HYPERAUTH_VERSION};
+    export REGISTRY=${this.env.registry};
+    cd $HYPERAUTH_HOME;
+    `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+      sudo docker load < postgres_\${POSTGRES_VERSION}.tar;
+      sudo docker load < hyperauth_b\${HYPERAUTH_VERSION}.tar;
+      # sudo docker save tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION} > hyperauth_b\${HYPERAUTH_VERSION}.tar;
+      # sudo docker save postgres:\${POSTGRES_VERSION} > postgres_\${POSTGRES_VERSION}.tar;
+      `;
+    } else {
+      gitPullCommand += `
+      sudo docker pull postgres:\${POSTGRES_VERSION};
+      sudo docker pull tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+      `;
+    }
+    return `
+      ${gitPullCommand}
+      sudo docker tag postgres:\${POSTGRES_VERSION} \${REGISTRY}/postgres:\${POSTGRES_VERSION}
+      sudo docker tag tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION}; \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+
+      sudo docker push \${REGISTRY}/postgres:\${POSTGRES_VERSION}
+      sudo docker push \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+      #rm -rf $HYPERAUTH_HOME;
+      `;
   }
 
   public async realmImport(param: {
@@ -67,8 +199,8 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     mainMaster.cmd = `
     export HYPERAUTH_SERVICE_IP=\`kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
     export HYPERCLOUD_CONSOLE_IP=\`kubectl describe service console-lb -n console-system | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
-    \\cp ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy/tmaxRealmImport.sh;
-    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy;
+    \\cp ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh;
+    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     sed -i 's|\\r$||g' tmaxRealmImport.sh;
     sed -i 's/${targetEmail}/${newEmail}/g' tmaxRealmImport.sh;
     sed -i 's/${targetPassword}/${newPassword}/g' tmaxRealmImport.sh;
@@ -109,7 +241,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
   }
 
   private _step1(): string {
-    let script = `cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy;`;
+    let script = `cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;`;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
@@ -130,8 +262,10 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     const script = ScriptFactory.createScript(osType);
 
     return `
-    cd ~/${HyperAuthInstaller.INSTALL_HOME};
-    ${script.createSslCert()}
+    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
+    openssl req -newkey rsa:4096 -nodes -sha256 -keyout hyperauth.key -x509 -subj "/C=KR/ST=Seoul/O=tmax/CN=$(kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7)" -days 3650 -config <(cat /etc/pki/tls/openssl.cnf <(printf "[v3_ca]\nsubjectAltName=IP:$(kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7)")) -out hyperauth.crt;
+    kubectl create secret tls hyperauth-https-secret --cert=./hyperauth.crt --key=./hyperauth.key -n hyperauth;
+    cp hyperauth.crt /etc/kubernetes/pki/hyperauth.crt;
     `;
   }
 
@@ -143,13 +277,13 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     });
 
     return `
-    cd ~/${HyperAuthInstaller.INSTALL_HOME};
+    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     ${copyScript}
     `;
   }
 
   private _step3(): string {
-    let script = `cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy;`;
+    let script = `cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;`;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
@@ -316,7 +450,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
   private _getRemoveScript(): string {
     return `
-    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy;
+    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     kubectl delete -f 2.hyperauth_deployment.yaml;
     kubectl delete secret hyperauth-https-secret -n hyperauth;
     rm -rf /etc/kubernetes/pki/hyperauth.crt;
@@ -328,103 +462,9 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start copy yaml file... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     mainMaster.cmd = `
-    \\cp -r ~/${HyperAuthInstaller.INSTALL_HOME}/manifest ~/${HyperAuthInstaller.INSTALL_HOME}/manifestCopy;
+    \\cp -r ~/${HyperAuthInstaller.INSTALL_HOME}/manifest ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     `;
     await mainMaster.exeCmd(callback);
     console.debug('###### Finish copy yaml file... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    await this._copyFile(callback);
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperAuthInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${HyperAuthInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${HyperAuthInstaller.IMAGE_HOME};
-    export HYPERAUTH_HOME=~/${HyperAuthInstaller.IMAGE_HOME};
-    export POSTGRES_VERSION=${HyperAuthInstaller.POSTGRES_VERSION};
-    export HYPERAUTH_VERSION=${HyperAuthInstaller.HYPERAUTH_VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $HYPERAUTH_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < postgres_\${POSTGRES_VERSION}.tar;
-      sudo docker load < hyperauth_b\${HYPERAUTH_VERSION}.tar;
-      # sudo docker save tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION} > hyperauth_b\${HYPERAUTH_VERSION}.tar;
-      # sudo docker save postgres:\${POSTGRES_VERSION} > postgres_\${POSTGRES_VERSION}.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull postgres:\${POSTGRES_VERSION};
-      sudo docker pull tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag postgres:\${POSTGRES_VERSION} \${REGISTRY}/postgres:\${POSTGRES_VERSION}
-      sudo docker tag tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION}; \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
-
-      sudo docker push \${REGISTRY}/postgres:\${POSTGRES_VERSION}
-      sudo docker push \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
-      #rm -rf $HYPERAUTH_HOME;
-      `;
   }
 }
