@@ -24,7 +24,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
 
   public static readonly ARCHIVE_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}`;
 
-  public static readonly K8S_VERSION = `1.17.6`;
+  public static readonly K8S_VERSION = `1.17.8`;
 
   public static readonly CRIO_VERSION = `1.17`;
 

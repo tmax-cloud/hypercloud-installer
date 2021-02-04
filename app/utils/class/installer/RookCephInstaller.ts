@@ -459,7 +459,7 @@ export default class RookCephInstaller extends AbstractInstaller {
       };
     }
 
-    // mon count 3 설정
+    // mon count 설정
     clusterYaml.spec.mon.count = Object.keys(option.disk).length;
 
     // 선택한 OSD 설치 할 디스크 없으면, 자동으로 OSD 설치 가능한 디스크 탐색 모드로 설정

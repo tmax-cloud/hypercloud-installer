@@ -6,15 +6,15 @@
   - yarn: https://classic.yarnpkg.com/
 
 ```bash
-$ git clone --depth 1 --single-branch -b {version} https://github.com/tmax-cloud/hypercloud5-installer.git {your-project-name}
-ex) git clone --depth 1 --single-branch -b v4.1.0 https://github.com/tmax-cloud/hypercloud5-installer.git hypercloud5-installer
+$ git clone --depth 1 --single-branch -b {version} https://github.com/tmax-cloud/hypercloud-installer.git {your-project-name}
+ex) git clone --depth 1 --single-branch -b v4.1.0 https://github.com/tmax-cloud/hypercloud-installer.git hypercloud-installer
 $ cd {your-project-name}
 $ yarn
 ```
 
 ## Packaging for Production
 
-- hypercloud5-installer 설치 파일 패키징
+- hypercloud-installer 설치 파일 패키징
 
 ```bash
 $ yarn package
