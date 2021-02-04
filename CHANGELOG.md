@@ -1,3 +1,18 @@
+# v4.1.10 (2020.02.04)
+
+### Features
+
+- 각 모듈 설치 github repo 분리 (console 제외)
+
+### Fixes
+
+- 분리된 repo에 맞게 각 모듈 version up (IMS: 253058, 247118)
+- rook ceph 설치 시, mon 값 수정 (IMS: 252725)
+- 기존 cluster에, 마스터 추가 시, taint 제거 로직 추가 (IMS: 249186)
+- k8s설치 전, lvm2 패키지 설치 (IMS: 248685)
+
+---
+
 # v4.1.9 (2020.01.07)
 
 ### Features
