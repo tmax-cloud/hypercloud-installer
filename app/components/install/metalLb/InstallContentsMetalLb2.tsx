@@ -334,6 +334,10 @@ function InstallContentsMetalLb2(props: any) {
       </div>
       <div>
         <ul className={['small', 'indicator'].join(' ')}>
+          <li>
+            이미 사용 중인 IP 대역과 중복되는 경우 문제가 발생할 수 있습니다.
+            (HOST IP 또는 가상 IP)
+          </li>
           <li>IP가 최소 10개가 보장되어야 합니다.</li>
           <li>HOST IP 대역에서 접근가능한 대역이어야 합니다.</li>
         </ul>
