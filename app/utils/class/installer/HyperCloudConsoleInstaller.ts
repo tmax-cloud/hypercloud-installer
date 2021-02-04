@@ -210,7 +210,7 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     kubectl delete -f 2.svc-lb.yaml;
     kubectl delete secret console-https-secret -n ${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE};
     kubectl delete -f 1.initialization.yaml;
-    #rm -rf ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
+    rm -rf ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
     `;
   }
 

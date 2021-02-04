@@ -137,6 +137,12 @@ EOF
     `;
   }
 
+  installLvm2(): string {
+    return `
+    yum install -y lvm2;
+      `;
+  }
+
   installNtp(): string {
     return `
       yum install -y ntp;

@@ -184,6 +184,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
       this.env.nodeList.map((node: Node) => {
         const script = ScriptFactory.createScript(node.os.type);
         node.cmd = script.cloneGitFile(CONST.K8S_REPO, CONST.GIT_BRANCH);
+
+        // FIXME: 현재 이전 git도 임시로 받음(repo 나누어지지 않은 모듈 설치 위해)
+        node.cmd += script.cloneGitFile(
+          `https://github.com/tmax-cloud/hypercloud-install-guide.git`,
+          CONST.GIT_BRANCH
+        );
         return node.exeCmd(callback);
       })
     );
@@ -265,6 +271,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
     await this._envSetting({ callback });
     await this.preWorkInstall({ callback });
     await this._installMaster(registry, version, callback);
+    await this._makeMasterCanSchedule();
   }
 
   public async deleteWorker() {
@@ -628,6 +635,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start env setting... @@@@@@');
     const { registry, callback } = param;
     await this._setNtp(callback);
+    await this._setLvm2(callback);
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       // internal network 경우 해주어야 할 작업들
       /**
@@ -648,6 +656,16 @@ export default class KubernetesInstaller extends AbstractInstaller {
       await this._installImageRegistry(registry, callback);
     }
     console.debug('###### Finish env setting... ######');
+  }
+
+  private async _setLvm2(callback: any) {
+    await Promise.all(
+      this.env.nodeList.map((node: Node) => {
+        const script = ScriptFactory.createScript(node.os.type);
+        node.cmd = script.installLvm2();
+        return node.exeCmd(callback);
+      })
+    );
   }
 
   private async _setNtp(callback: any) {

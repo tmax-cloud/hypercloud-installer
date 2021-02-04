@@ -199,13 +199,13 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     mainMaster.cmd = `
     export HYPERAUTH_SERVICE_IP=\`kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
     export HYPERCLOUD_CONSOLE_IP=\`kubectl describe service console-lb -n console-system | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
-    \\cp ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh;
+    \\cp ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImportCopy.sh;
     cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
-    sed -i 's|\\r$||g' tmaxRealmImport.sh;
-    sed -i 's/${targetEmail}/${newEmail}/g' tmaxRealmImport.sh;
-    sed -i 's/${targetPassword}/${newPassword}/g' tmaxRealmImport.sh;
-    chmod 755 tmaxRealmImport.sh;
-    ./tmaxRealmImport.sh \${HYPERAUTH_SERVICE_IP} \${HYPERCLOUD_CONSOLE_IP};
+    sed -i 's|\\r$||g' tmaxRealmImportCopy.sh;
+    sed -i 's/${targetEmail}/${newEmail}/g' tmaxRealmImportCopy.sh;
+    sed -i 's/${targetPassword}/${newPassword}/g' tmaxRealmImportCopy.sh;
+    chmod 755 tmaxRealmImportCopy.sh;
+    ./tmaxRealmImportCopy.sh \${HYPERAUTH_SERVICE_IP} \${HYPERCLOUD_CONSOLE_IP};
     `;
     await mainMaster.exeCmd(callback);
   }
@@ -246,8 +246,8 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
       script += `
-      sed -i 's/cpu: "1"/cpu: "0.5"/g' 1.initialization.yaml;
-      sed -i 's/memory: "5Gi"/memory: "1Gi"/g' 1.initialization.yaml;
+      sed -i 's/cpu: "300m"/cpu: "0.5"/g' 1.initialization.yaml;
+      sed -i 's/memory: "300Mi"/memory: "500Mi"/g' 1.initialization.yaml;
       `;
     }
     script += `
@@ -258,9 +258,6 @@ export default class HyperAuthInstaller extends AbstractInstaller {
   }
 
   private _step2(osType: string): string {
-    // TODO:Kubernetes Master가 다중화 된 경우, hyperauth.crt를 각 Master 노드들의 /etc/kubernetes/pki/hyperauth.crt 로 cp
-    const script = ScriptFactory.createScript(osType);
-
     return `
     cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     openssl req -newkey rsa:4096 -nodes -sha256 -keyout hyperauth.key -x509 -subj "/C=KR/ST=Seoul/O=tmax/CN=$(kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7)" -days 3650 -config <(cat /etc/pki/tls/openssl.cnf <(printf "[v3_ca]\nsubjectAltName=IP:$(kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7)")) -out hyperauth.crt;
@@ -288,8 +285,8 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
       script += `
-      sed -i 's/memory: "1Gi"/memory: "500Mi"/g' 2.hyperauth_deployment.yaml;
-      sed -i 's/cpu: "1"/cpu: "0.5"/g' 2.hyperauth_deployment.yaml;
+      sed -i 's/memory: "300Mi"/memory: "500Mi"/g' 2.hyperauth_deployment.yaml;
+      sed -i 's/cpu: "300m"/cpu: "0.5"/g' 2.hyperauth_deployment.yaml;
       `;
     }
     script += `
@@ -453,8 +450,9 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     kubectl delete -f 2.hyperauth_deployment.yaml;
     kubectl delete secret hyperauth-https-secret -n hyperauth;
-    rm -rf /etc/kubernetes/pki/hyperauth.crt;
+    # rm -rf /etc/kubernetes/pki/hyperauth.crt;
     kubectl delete -f 1.initialization.yaml;
+    rm -rf ~/${HyperAuthInstaller.INSTALL_HOME};
     `;
   }
 

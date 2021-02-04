@@ -123,11 +123,12 @@ function InstallContentsTekton3(props: any) {
     } catch (error) {
       console.error(error);
 
-      await tektonPipelineInstaller.remove();
-      await tektonTriggerInstaller.remove();
-      await tektonApprovalInstaller.remove();
-      await tektonMailNotifierInstaller.remove();
+      // 설치 역순
       await tektonCiCdTemplatesInstaller.remove();
+      await tektonMailNotifierInstaller.remove();
+      await tektonApprovalInstaller.remove();
+      await tektonTriggerInstaller.remove();
+      await tektonPipelineInstaller.remove();
     } finally {
       console.log();
     }

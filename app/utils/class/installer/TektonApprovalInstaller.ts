@@ -5,7 +5,7 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class TektonApprovalInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `approval-install`;
+  public static readonly IMAGE_DIR = `install-tekton`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}`;
 
@@ -40,6 +40,118 @@ export default class TektonApprovalInstaller extends AbstractInstaller {
 
   public async remove() {
     await this._removeMainMaster();
+  }
+
+  // protected abstract 구현
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      await this.downloadImageFile();
+      await this.sendImageFile();
+      // TODO: downloadYamlAtLocal();
+      // TODO: sendYaml();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      await this._downloadYaml();
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${TektonApprovalInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected cloneGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    mainMaster.cmd += this._getImagePathEditScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+    mkdir -p ~/${TektonApprovalInstaller.IMAGE_HOME};
+    export HOME=~/${TektonApprovalInstaller.IMAGE_HOME};
+    export VERSION=v${TektonApprovalInstaller.VERSION};
+    export REGISTRY=${this.env.registry};
+    cd $HOME;
+    `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+      docker load < approval-watcher-0.0.3.tar;
+      docker load < approval-step-server-0.0.3.tar;
+      `;
+    } else {
+      gitPullCommand += `
+      docker pull tmaxcloudck/approval-watcher:0.0.3;
+      docker pull tmaxcloudck/approval-step-server:0.0.3;
+
+      docker tag tmaxcloudck/approval-watcher:0.0.3 approval-watcher:0.0.3;
+      docker tag tmaxcloudck/approval-step-server:0.0.3 approval-step-server:0.0.3;
+
+      #docker save approval-watcher:0.0.3 > approval-watcher-0.0.3.tar;
+      #docker save approval-step-server:0.0.3 > approval-step-server-0.0.3.tar;
+      `;
+    }
+    return `
+      ${gitPullCommand}
+      docker tag approval-watcher:0.0.3 $REGISTRY/approval-watcher:0.0.3;
+      docker tag approval-step-server:0.0.3 $REGISTRY/approval-step-server:0.0.3;
+
+      docker push $REGISTRY/approval-watcher:0.0.3;
+      docker push $REGISTRY/approval-step-server:0.0.3;
+      #rm -rf $HOME;
+      `;
   }
 
   private async _installMainMaster(callback: any) {
@@ -128,106 +240,6 @@ export default class TektonApprovalInstaller extends AbstractInstaller {
     `;
     await mainMaster.exeCmd();
     console.debug('###### Finish download yaml file from external... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-      // TODO: downloadYamlAtLocal();
-      // TODO: sendYaml();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-      await this._downloadYaml();
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${TektonApprovalInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${TektonApprovalInstaller.IMAGE_HOME};
-    export HOME=~/${TektonApprovalInstaller.IMAGE_HOME};
-    export VERSION=v${TektonApprovalInstaller.VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      docker load < approval-watcher-0.0.3.tar;
-      docker load < approval-step-server-0.0.3.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      docker pull tmaxcloudck/approval-watcher:0.0.3;
-      docker pull tmaxcloudck/approval-step-server:0.0.3;
-
-      docker tag tmaxcloudck/approval-watcher:0.0.3 approval-watcher:0.0.3;
-      docker tag tmaxcloudck/approval-step-server:0.0.3 approval-step-server:0.0.3;
-
-      #docker save approval-watcher:0.0.3 > approval-watcher-0.0.3.tar;
-      #docker save approval-step-server:0.0.3 > approval-step-server-0.0.3.tar;
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      docker tag approval-watcher:0.0.3 $REGISTRY/approval-watcher:0.0.3;
-      docker tag approval-step-server:0.0.3 $REGISTRY/approval-step-server:0.0.3;
-
-      docker push $REGISTRY/approval-watcher:0.0.3;
-      docker push $REGISTRY/approval-step-server:0.0.3;
-      #rm -rf $HOME;
-      `;
   }
 
   private _getImagePathEditScript(): string {

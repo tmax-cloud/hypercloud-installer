@@ -229,14 +229,26 @@ export default class CniInstaller extends AbstractInstaller {
   }
 
   private _getInstallScript(): string {
-    return `
+    let script = `
       . ~/${KubernetesInstaller.INSTALL_HOME}/manifest/k8s.config;
       cd ~/${CniInstaller.INSTALL_HOME}/manifest;
       sed -i 's/v3.13.4/'v${CniInstaller.CNI_VERSION}'/g' calico_${CniInstaller.CNI_VERSION}.yaml;
       sed -i 's|10.0.0.0/16|'$podSubnet'|g' calico_${CniInstaller.CNI_VERSION}.yaml;
+    `;
+
+    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
+    if (process.env.RESOURCE === 'low') {
+      script += `
+        sed -i 's/cpu/#cpu/g' calico_${CniInstaller.CNI_VERSION}.yaml;
+        sed -i 's/memory/#memory/g' calico_${CniInstaller.CNI_VERSION}.yaml;
+      `;
+    }
+
+    script += `
       kubectl apply -f calico_${CniInstaller.CNI_VERSION}.yaml;
       kubectl apply -f calicoctl_${CniInstaller.CTL_VERSION}.yaml;
-      `;
+    `;
+    return script;
   }
 
   private _getRemoveScript(): string {

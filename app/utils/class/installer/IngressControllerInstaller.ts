@@ -5,6 +5,7 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class IngressControllerInstaller extends AbstractInstaller {
+  // FIXME: 더이상 사용하지 않는 클래스 (2개로 나눠서 각각 클래스만듬)
   public static readonly IMAGE_DIR = `install-ingress-nginx`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/hypercloud-install-guide/IngressNginx`;

@@ -353,7 +353,10 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
 
   private _step7() {
     return `
-    # cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifest/hypercloud-webhook;
+    ${this._exportEnv()}
+    # cd ~/${
+      HyperCloudWebhookInstaller.INSTALL_HOME
+    }/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION};
     # kubectl apply -f test-yaml/namespaceclaim.yaml;
     `;
   }
@@ -377,7 +380,10 @@ export default class HyperCloudWebhookInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     // hypercloud operator 삭제 할 때, git repo 폴더 삭제
     return `
-    cd ~/${HyperCloudWebhookInstaller.INSTALL_HOME}/manifest/hypercloud-webhook;
+        ${this._exportEnv()}
+    cd ~/${
+      HyperCloudWebhookInstaller.INSTALL_HOME
+    }/manifest/hypercloud-webhook-\${HPCD_WEBHOOK_VERSION};
     # kubectl delete -f test-yaml/namespaceclaim.yaml;
     kubectl delete -f 03_webhook-configuration.yaml;
     kubectl delete -f 01_webhook-deployment.yaml;

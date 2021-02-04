@@ -12,6 +12,8 @@ const CONST = {
   HYPERCLOUD_REPO: 'https://github.com/tmax-cloud/install-hypercloud.git',
   SECRET_WATCHER_REPO:
     'https://github.com/tmax-cloud/install-secretwatcher.git',
+  TSB_REPO: 'https://github.com/tmax-cloud/install-tsb.git',
+  TEKTON_REPO: 'https://github.com/tmax-cloud/install-tekton.git',
   GIT_BRANCH: '4.1',
   PRODUCT: {
     KUBERNETES: {

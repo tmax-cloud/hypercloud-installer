@@ -5,7 +5,7 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class TektonCiCdTemplatesInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `cicd-install`;
+  public static readonly IMAGE_DIR = `install-tekton`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}`;
 
@@ -39,6 +39,160 @@ export default class TektonCiCdTemplatesInstaller extends AbstractInstaller {
 
   public async remove() {
     await this._removeMainMaster();
+  }
+
+  // protected abstract 구현
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      await this.downloadImageFile();
+      await this.sendImageFile();
+      // TODO: downloadYamlAtLocal();
+      // TODO: sendYaml();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      await this._downloadYaml();
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${TektonCiCdTemplatesInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected cloneGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    mainMaster.cmd += this._getImagePathEditScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+    mkdir -p ~/${TektonCiCdTemplatesInstaller.IMAGE_HOME};
+    export HOME=~/${TektonCiCdTemplatesInstaller.IMAGE_HOME};
+    export VERSION=v${TektonCiCdTemplatesInstaller.VERSION};
+    export REGISTRY=${this.env.registry};
+    cd $HOME;
+    `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+      docker load < cicd-util_1.1.4.tar
+      docker load < klar_v2.4.0.tar
+      docker load < s2i_nightly.tar
+      docker load < buildah_latest.tar
+      docker load < s2i-apache_2.4.tar
+      docker load < s2i-django_35.tar
+      docker load < s2i-nodejs_12.tar
+      docker load < s2i-tomcat_latest.tar
+      docker load < s2i-wildfly_latest.tar
+      `;
+    } else {
+      gitPullCommand += `
+      docker pull tmaxcloudck/cicd-util:1.1.4;
+      docker pull tmaxcloudck/klar:v2.4.0;
+      docker pull quay.io/openshift-pipeline/s2i:nightly;
+      docker pull quay.io/buildah/stable:latest;
+      docker pull tmaxcloudck/s2i-apache:2.4;
+      docker pull tmaxcloudck/s2i-django:35;
+      docker pull tmaxcloudck/s2i-nodejs:12;
+      docker pull tmaxcloudck/s2i-tomcat:latest;
+      docker pull tmaxcloudck/s2i-wildfly:latest;
+
+      docker tag tmaxcloudck/cicd-util:1.1.4 cicd-util:1.1.4
+      docker tag tmaxcloudck/klar:v2.4.0 klar:v2.4.0
+      docker tag quay.io/openshift-pipeline/s2i:nightly s2i:nightly
+      docker tag quay.io/buildah/stable:latest buildah:latest
+      docker tag tmaxcloudck/s2i-apache:2.4 s2i-apache:2.4
+      docker tag tmaxcloudck/s2i-django:35 s2i-django:35
+      docker tag tmaxcloudck/s2i-nodejs:12 s2i-nodejs:12
+      docker tag tmaxcloudck/s2i-tomcat:latest s2i-tomcat:latest
+      docker tag tmaxcloudck/s2i-wildfly:latest s2i-wildfly:latest
+
+      #docker save cicd-util:1.1.4 > cicd-util_1.1.4.tar
+      #docker save klar:v2.4.0 > klar_v2.4.0.tar
+      #docker save s2i:nightly > s2i_nightly.tar
+      #docker save buildah:latest > buildah_latest.tar
+      #docker save s2i-apache:2.4 > s2i-apache_2.4.tar
+      #docker save s2i-django:35 > s2i-django_35.tar
+      #docker save s2i-nodejs:12 > s2i-nodejs_12.tar
+      #docker save s2i-tomcat:latest > s2i-tomcat_latest.tar
+      #docker save s2i-wildfly:latest > s2i-wildfly_latest.tar
+      `;
+    }
+    return `
+      ${gitPullCommand}
+      docker tag cicd-util:1.1.4 $REGISTRY/cicd-util:1.1.4
+      docker tag klar:v2.4.0 $REGISTRY/klar:v2.4.0
+      docker tag s2i:nightly $REGISTRY/s2i:nightly
+      docker tag buildah:latest $REGISTRY/buildah:latest
+      docker tag s2i-apache:2.4 $REGISTRY/s2i-apache:2.4
+      docker tag s2i-django:35 $REGISTRY/s2i-django:35
+      docker tag s2i-nodejs:12 $REGISTRY/s2i-nodejs:12
+      docker tag s2i-tomcat:latest $REGISTRY/s2i-tomcat:latest
+      docker tag s2i-wildfly:latest $REGISTRY/s2i-wildfly:latest
+
+      docker push $REGISTRY/cicd-util:1.1.4
+      docker push $REGISTRY/klar:v2.4.0
+      docker push $REGISTRY/s2i:nightly
+      docker push $REGISTRY/buildah:latest
+      docker push $REGISTRY/s2i-apache:2.4
+      docker push $REGISTRY/s2i-django:35
+      docker push $REGISTRY/s2i-nodejs:12
+      docker push $REGISTRY/s2i-tomcat:latest
+      docker push $REGISTRY/s2i-wildfly:latest
+      #rm -rf $HOME;
+      `;
   }
 
   private async _installMainMaster(callback: any) {
@@ -150,148 +304,6 @@ export default class TektonCiCdTemplatesInstaller extends AbstractInstaller {
     `;
     await mainMaster.exeCmd();
     console.debug('###### Finish download yaml file from external... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-      // TODO: downloadYamlAtLocal();
-      // TODO: sendYaml();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-      await this._downloadYaml();
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${TektonCiCdTemplatesInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${TektonCiCdTemplatesInstaller.IMAGE_HOME};
-    export HOME=~/${TektonCiCdTemplatesInstaller.IMAGE_HOME};
-    export VERSION=v${TektonCiCdTemplatesInstaller.VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      docker load < cicd-util_1.1.4.tar
-      docker load < klar_v2.4.0.tar
-      docker load < s2i_nightly.tar
-      docker load < buildah_latest.tar
-      docker load < s2i-apache_2.4.tar
-      docker load < s2i-django_35.tar
-      docker load < s2i-nodejs_12.tar
-      docker load < s2i-tomcat_latest.tar
-      docker load < s2i-wildfly_latest.tar
-      `;
-    } else {
-      gitPullCommand += `
-      docker pull tmaxcloudck/cicd-util:1.1.4;
-      docker pull tmaxcloudck/klar:v2.4.0;
-      docker pull quay.io/openshift-pipeline/s2i:nightly;
-      docker pull quay.io/buildah/stable:latest;
-      docker pull tmaxcloudck/s2i-apache:2.4;
-      docker pull tmaxcloudck/s2i-django:35;
-      docker pull tmaxcloudck/s2i-nodejs:12;
-      docker pull tmaxcloudck/s2i-tomcat:latest;
-      docker pull tmaxcloudck/s2i-wildfly:latest;
-
-      docker tag tmaxcloudck/cicd-util:1.1.4 cicd-util:1.1.4
-      docker tag tmaxcloudck/klar:v2.4.0 klar:v2.4.0
-      docker tag quay.io/openshift-pipeline/s2i:nightly s2i:nightly
-      docker tag quay.io/buildah/stable:latest buildah:latest
-      docker tag tmaxcloudck/s2i-apache:2.4 s2i-apache:2.4
-      docker tag tmaxcloudck/s2i-django:35 s2i-django:35
-      docker tag tmaxcloudck/s2i-nodejs:12 s2i-nodejs:12
-      docker tag tmaxcloudck/s2i-tomcat:latest s2i-tomcat:latest
-      docker tag tmaxcloudck/s2i-wildfly:latest s2i-wildfly:latest
-
-      #docker save cicd-util:1.1.4 > cicd-util_1.1.4.tar
-      #docker save klar:v2.4.0 > klar_v2.4.0.tar
-      #docker save s2i:nightly > s2i_nightly.tar
-      #docker save buildah:latest > buildah_latest.tar
-      #docker save s2i-apache:2.4 > s2i-apache_2.4.tar
-      #docker save s2i-django:35 > s2i-django_35.tar
-      #docker save s2i-nodejs:12 > s2i-nodejs_12.tar
-      #docker save s2i-tomcat:latest > s2i-tomcat_latest.tar
-      #docker save s2i-wildfly:latest > s2i-wildfly_latest.tar
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      docker tag cicd-util:1.1.4 $REGISTRY/cicd-util:1.1.4
-      docker tag klar:v2.4.0 $REGISTRY/klar:v2.4.0
-      docker tag s2i:nightly $REGISTRY/s2i:nightly
-      docker tag buildah:latest $REGISTRY/buildah:latest
-      docker tag s2i-apache:2.4 $REGISTRY/s2i-apache:2.4
-      docker tag s2i-django:35 $REGISTRY/s2i-django:35
-      docker tag s2i-nodejs:12 $REGISTRY/s2i-nodejs:12
-      docker tag s2i-tomcat:latest $REGISTRY/s2i-tomcat:latest
-      docker tag s2i-wildfly:latest $REGISTRY/s2i-wildfly:latest
-
-      docker push $REGISTRY/cicd-util:1.1.4
-      docker push $REGISTRY/klar:v2.4.0
-      docker push $REGISTRY/s2i:nightly
-      docker push $REGISTRY/buildah:latest
-      docker push $REGISTRY/s2i-apache:2.4
-      docker push $REGISTRY/s2i-django:35
-      docker push $REGISTRY/s2i-nodejs:12
-      docker push $REGISTRY/s2i-tomcat:latest
-      docker push $REGISTRY/s2i-wildfly:latest
-      #rm -rf $HOME;
-      `;
   }
 
   private _getImagePathEditScript(): string {

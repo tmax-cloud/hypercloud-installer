@@ -47,26 +47,26 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     });
 
     // ingress 설치
-    // if (state.isUseIngress) {
-    //   if (state.sharedIngress) {
-    //     const ingressControllerSharedInstaller =
-    //       IngressControllerSharedInstaller.getInstance;
-    //     ingressControllerSharedInstaller.env = this.env;
-    //     await ingressControllerSharedInstaller.install({
-    //       callback,
-    //       setProgress
-    //     });
-    //   }
-    //   if (state.systemIngress) {
-    //     const ingressControllerSystemInstaller =
-    //       IngressControllerSystemInstaller.getInstance;
-    //     ingressControllerSystemInstaller.env = this.env;
-    //     await ingressControllerSystemInstaller.install({
-    //       callback,
-    //       setProgress
-    //     });
-    //   }
-    // }
+    if (state.isUseIngress) {
+      if (state.sharedIngress) {
+        const ingressControllerSharedInstaller =
+          IngressControllerSharedInstaller.getInstance;
+        ingressControllerSharedInstaller.env = this.env;
+        await ingressControllerSharedInstaller.install({
+          callback,
+          setProgress
+        });
+      }
+      if (state.systemIngress) {
+        const ingressControllerSystemInstaller =
+          IngressControllerSystemInstaller.getInstance;
+        ingressControllerSystemInstaller.env = this.env;
+        await ingressControllerSystemInstaller.install({
+          callback,
+          setProgress
+        });
+      }
+    }
 
     // operator 설치
     await this._installMainMaster(state, callback);
@@ -328,7 +328,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
       script += `
-      sed -i 's/memory: "5Gi"/memory: "1Gi"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
+      sed -i 's/memory: "5Gi"/memory: "500Mi"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
       sed -i 's/cpu: "1"/cpu: "0.5"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
       `;
     }

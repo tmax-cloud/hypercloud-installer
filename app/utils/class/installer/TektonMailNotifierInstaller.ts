@@ -5,7 +5,7 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class TektonMailNotifierInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `mail-install`;
+  public static readonly IMAGE_DIR = `install-tekton`;
 
   public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonMailNotifierInstaller.IMAGE_DIR}`;
 
@@ -40,6 +40,118 @@ export default class TektonMailNotifierInstaller extends AbstractInstaller {
 
   public async remove() {
     await this._removeMainMaster();
+  }
+
+  // protected abstract 구현
+  protected async preWorkInstall(param?: any) {
+    console.debug('@@@@@@ Start pre-installation... @@@@@@');
+    const { callback } = param;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      // internal network 경우 해주어야 할 작업들
+      await this.downloadImageFile();
+      await this.sendImageFile();
+      // TODO: downloadYamlAtLocal();
+      // TODO: sendYaml();
+    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+      // external network 경우 해주어야 할 작업들
+      await this._downloadYaml();
+    }
+
+    if (this.env.registry) {
+      // 내부 image registry 구축 경우 해주어야 할 작업들
+      await this.registryWork({
+        callback
+      });
+    }
+    console.debug('###### Finish pre-installation... ######');
+  }
+
+  protected async downloadImageFile() {
+    // TODO: download image file
+    console.debug(
+      '@@@@@@ Start downloading the image file to client local... @@@@@@'
+    );
+    console.debug(
+      '###### Finish downloading the image file to client local... ######'
+    );
+  }
+
+  protected async sendImageFile() {
+    console.debug(
+      '@@@@@@ Start sending the image file to main master node... @@@@@@'
+    );
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonMailNotifierInstaller.IMAGE_DIR}/`;
+    await scp.sendFile(
+      mainMaster,
+      srcPath,
+      `${TektonMailNotifierInstaller.IMAGE_HOME}/`
+    );
+    console.debug(
+      '###### Finish sending the image file to main master node... ######'
+    );
+  }
+
+  protected downloadGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected sendGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected cloneGitFile(param?: any): Promise<any> {
+    throw new Error('Method not implemented.');
+  }
+
+  protected async registryWork(param: { callback: any }) {
+    console.debug(
+      '@@@@@@ Start pushing the image at main master node... @@@@@@'
+    );
+    const { callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = this.getImagePushScript();
+    mainMaster.cmd += this._getImagePathEditScript();
+    await mainMaster.exeCmd(callback);
+    console.debug(
+      '###### Finish pushing the image at main master node... ######'
+    );
+  }
+
+  protected getImagePushScript(): string {
+    let gitPullCommand = `
+    mkdir -p ~/${TektonMailNotifierInstaller.IMAGE_HOME};
+    export HOME=~/${TektonMailNotifierInstaller.IMAGE_HOME};
+    export VERSION=v${TektonMailNotifierInstaller.VERSION};
+    export REGISTRY=${this.env.registry};
+    cd $HOME;
+    `;
+    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+      gitPullCommand += `
+      docker load < mail-sender-server-v0.0.4.tar;
+      docker load < mail-sender-client-v0.0.4.tar;
+      `;
+    } else {
+      gitPullCommand += `
+      docker pull tmaxcloudck/mail-sender-server:v0.0.4;
+      docker pull tmaxcloudck/mail-sender-client:v0.0.4;
+
+      docker tag tmaxcloudck/mail-sender-server:v0.0.4 mail-sender-server:v0.0.4;
+      docker tag tmaxcloudck/mail-sender-client:v0.0.4 mail-sender-client:v0.0.4;
+
+      #docker save mail-sender-server:v0.0.4 > mail-sender-server-v0.0.4.tar;
+      #docker save mail-sender-client:v0.0.4 > mail-sender-client-v0.0.4.tar;
+      `;
+    }
+    return `
+      ${gitPullCommand}
+      docker tag mail-sender-server:v0.0.4 $REGISTRY/mail-sender-server:v0.0.4;
+      docker tag mail-sender-client:v0.0.4 $REGISTRY/mail-sender-client:v0.0.4;
+
+      docker push $REGISTRY/mail-sender-server:v0.0.4
+      docker push $REGISTRY/mail-sender-client:v0.0.4
+      #rm -rf $HOME;
+      `;
   }
 
   private async _installMainMaster(callback: any) {
@@ -152,106 +264,6 @@ export default class TektonMailNotifierInstaller extends AbstractInstaller {
     `;
     await mainMaster.exeCmd();
     console.debug('###### Finish download yaml file from external... ######');
-  }
-
-  // protected abstract 구현
-  protected async preWorkInstall(param?: any) {
-    console.debug('@@@@@@ Start pre-installation... @@@@@@');
-    const { callback } = param;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // internal network 경우 해주어야 할 작업들
-      await this.downloadImageFile();
-      await this.sendImageFile();
-      // TODO: downloadYamlAtLocal();
-      // TODO: sendYaml();
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      // external network 경우 해주어야 할 작업들
-      await this._downloadYaml();
-    }
-
-    if (this.env.registry) {
-      // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
-    }
-    console.debug('###### Finish pre-installation... ######');
-  }
-
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
-
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonMailNotifierInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${TektonMailNotifierInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
-
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
-
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${TektonMailNotifierInstaller.IMAGE_HOME};
-    export HOME=~/${TektonMailNotifierInstaller.IMAGE_HOME};
-    export VERSION=v${TektonMailNotifierInstaller.VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      docker load < mail-sender-server-v0.0.4.tar;
-      docker load < mail-sender-client-v0.0.4.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      docker pull tmaxcloudck/mail-sender-server:v0.0.4;
-      docker pull tmaxcloudck/mail-sender-client:v0.0.4;
-
-      docker tag tmaxcloudck/mail-sender-server:v0.0.4 mail-sender-server:v0.0.4;
-      docker tag tmaxcloudck/mail-sender-client:v0.0.4 mail-sender-client:v0.0.4;
-
-      #docker save mail-sender-server:v0.0.4 > mail-sender-server-v0.0.4.tar;
-      #docker save mail-sender-client:v0.0.4 > mail-sender-client-v0.0.4.tar;
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      docker tag mail-sender-server:v0.0.4 $REGISTRY/mail-sender-server:v0.0.4;
-      docker tag mail-sender-client:v0.0.4 $REGISTRY/mail-sender-client:v0.0.4;
-
-      docker push $REGISTRY/mail-sender-server:v0.0.4
-      docker push $REGISTRY/mail-sender-client:v0.0.4
-      #rm -rf $HOME;
-      `;
   }
 
   private _getImagePathEditScript(): string {
