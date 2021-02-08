@@ -14,21 +14,21 @@ export default class CentosScript extends AbstractScript {
     return `
     #install kubernetes
     if [[ -z \${k8sVersion} ]]; then
-    k8sVersion=1.17.6
+        k8sVersion=1.17.6
     else
-    k8sVersion=\${k8sVersion}
+        k8sVersion=\${k8sVersion}
     fi
 
     if [[ -z \${apiServer} ]]; then
-    apiServer=127.0.0.1
+        apiServer=127.0.0.1
     else
         apiServer=\${apiServer}
     fi
 
     if [[ -z \${podSubnet} ]]; then
-      podSubnet=10.244.0.0/16
+        podSubnet=10.244.0.0/16
     else
-       podSubnet=\${podSubnet}
+        podSubnet=\${podSubnet}
     fi
 
     #install kubernetes components

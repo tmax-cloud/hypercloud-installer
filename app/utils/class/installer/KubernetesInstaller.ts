@@ -79,9 +79,18 @@ export default class KubernetesInstaller extends AbstractInstaller {
   }
 
   public async remove() {
-    await this._removeWorker();
-    await this._removeMaster();
-    await this._removeMainMaster();
+    const {
+      workerArr,
+      masterArr,
+      mainMaster
+    } = this.env.getNodesSortedByRole();
+    await this._getRemoveScript(workerArr, 'Worker');
+    await this._getRemoveScript(masterArr, 'Master');
+    await this._getRemoveScript([mainMaster], 'MainMaster');
+
+    // await this._removeWorker();
+    // await this._removeMaster();
+    // await this._removeMainMaster();
   }
 
   protected async preWorkInstall(param: { registry?: string; callback: any }) {
@@ -330,13 +339,29 @@ export default class KubernetesInstaller extends AbstractInstaller {
   ) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getK8sMainMasterInstallScript(
-      mainMaster,
-      registry,
-      version,
-      podSubnet,
-      true
-    );
+    const script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = `
+      ${AbstractScript.setHostName(mainMaster.hostName)}
+      ${AbstractScript.registHostName()}
+      ${script.getMasterMultiplexingScript(
+        mainMaster,
+        99999999,
+        this.env.virtualIp
+      )}
+      ${AbstractScript.setK8sConfig(
+        registry,
+        version,
+        this.env.virtualIp,
+        podSubnet
+      )}
+      ${script.setEnvForKubernetes()}
+      ${script.startInstallCrio()}
+      ${script.startInstallKubernetes()}
+      ${AbstractScript.initKube()}
+      ${AbstractScript.makeMasterKubeConfig()}
+      ${common.getDeleteDuplicationCommandByFilePath(
+        `/etc/sysctl.d/99-kubernetes-cri.conf`
+      )}`;
     await mainMaster.exeCmd(callback);
     console.debug('###### Finish installing main Master... ######');
   }
@@ -351,13 +376,25 @@ export default class KubernetesInstaller extends AbstractInstaller {
     const masterJoinCmd = await this._getMasterJoinCmd(mainMaster);
     await Promise.all(
       masterArr.map((master, index) => {
-        master.cmd = this._getK8sMasterInstallScript(
-          registry,
-          version,
+        const script = ScriptFactory.createScript(master.os.type);
+        master.cmd = `
+        ${AbstractScript.setHostName(master.hostName)}
+        ${AbstractScript.registHostName()}
+        ${script.getMasterMultiplexingScript(
           master,
-          Math.floor(Math.random() * 99999999)
-        );
-        master.cmd += `${masterJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;`;
+          Math.floor(Math.random() * 99999999),
+          this.env.virtualIp
+        )}
+        ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
+        ${script.setEnvForKubernetes()}
+        ${script.startInstallCrio()}
+        ${script.startInstallKubernetes()}
+        ${AbstractScript.makeMasterKubeConfig()}
+        ${common.getDeleteDuplicationCommandByFilePath(
+          `/etc/sysctl.d/99-kubernetes-cri.conf`
+        )}
+        ${masterJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
+        `;
         return master.exeCmd(callback);
       })
     );
@@ -374,47 +411,35 @@ export default class KubernetesInstaller extends AbstractInstaller {
     const workerJoinCmd = await this._getWorkerJoinCmd(mainMaster);
     await Promise.all(
       workerArr.map(worker => {
-        worker.cmd = this._getK8sWorkerInstallScript(registry, version, worker);
-        worker.cmd += `${workerJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;`;
+        const script = ScriptFactory.createScript(worker.os.type);
+        worker.cmd = `
+        ${AbstractScript.setHostName(worker.hostName)}
+        ${AbstractScript.registHostName()}
+        ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
+        ${script.setEnvForKubernetes()}
+        ${script.startInstallCrio()}
+        ${script.startInstallKubernetes()}
+        ${common.getDeleteDuplicationCommandByFilePath(
+          `/etc/sysctl.d/99-kubernetes-cri.conf`
+        )}
+        ${workerJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
+        `;
         return worker.exeCmd(callback);
       })
     );
     console.debug('###### Finish installing Worker... ######');
   }
 
-  private async _removeWorker() {
-    console.debug('@@@@@@ Start remove Worker... @@@@@@');
-    const { workerArr } = this.env.getNodesSortedByRole();
+  private async _getRemoveScript(nodeArr: any[], type: string) {
+    console.debug(`@@@@@@ Start remove ${type}... @@@@@@`);
     await Promise.all(
-      workerArr.map((worker: Node) => {
-        const script = ScriptFactory.createScript(worker.os.type);
-        worker.cmd = script.getK8sMasterRemoveScript();
-        return worker.exeCmd();
+      nodeArr.map((node: Node) => {
+        const script = ScriptFactory.createScript(node.os.type);
+        node.cmd = script.getK8sMasterRemoveScript();
+        return node.exeCmd();
       })
     );
-    console.debug('###### Finish remove Worker... ######');
-  }
-
-  private async _removeMaster() {
-    console.debug('@@@@@@ Start remove Master... @@@@@@');
-    const { masterArr } = this.env.getNodesSortedByRole();
-    await Promise.all(
-      masterArr.map((master: Node) => {
-        const script = ScriptFactory.createScript(master.os.type);
-        master.cmd = script.getK8sMasterRemoveScript();
-        return master.exeCmd();
-      })
-    );
-    console.debug('###### Finish remove Master... ######');
-  }
-
-  private async _removeMainMaster() {
-    console.debug('@@@@@@ Start remove main Master... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const script = ScriptFactory.createScript(mainMaster.os.type);
-    mainMaster.cmd = script.getK8sMasterRemoveScript();
-    await mainMaster.exeCmd();
-    console.debug('###### Finish remove main Master... ######');
+    console.debug(`###### Finish remove ${type}... ######`);
   }
 
   private async _downloadPackageFile() {
@@ -505,88 +530,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug(
       '###### Finish setting the public package repository at each node... ######'
     );
-  }
-
-  private _getK8sMainMasterInstallScript(
-    mainMaster: Node,
-    registry: string,
-    version: string,
-    podSubnet: string,
-    isMultiMaster: boolean
-  ): string {
-    const script = ScriptFactory.createScript(mainMaster.os.type);
-    return `
-      ${AbstractScript.setHostName(mainMaster.hostName)}
-      ${AbstractScript.registHostName()}
-      ${
-        isMultiMaster
-          ? script.getMasterMultiplexingScript(
-              mainMaster,
-              99999999,
-              this.env.virtualIp
-            )
-          : ''
-      }
-      ${AbstractScript.setK8sConfig(
-        registry,
-        version,
-        this.env.virtualIp,
-        podSubnet
-      )}
-      ${script.setEnvForKubernetes()}
-      ${script.startInstallCrio()}
-      ${script.startInstallKubernetes()}
-      ${AbstractScript.initKube()}
-      ${AbstractScript.makeMasterKubeConfig()}
-      ${common.getDeleteDuplicationCommandByFilePath(
-        `/etc/sysctl.d/99-kubernetes-cri.conf`
-      )}
-      `;
-  }
-
-  private _getK8sMasterInstallScript(
-    registry: string,
-    version: string,
-    master: Node,
-    priority: number
-  ): string {
-    const script = ScriptFactory.createScript(master.os.type);
-    return `
-      ${AbstractScript.setHostName(master.hostName)}
-      ${AbstractScript.registHostName()}
-      ${script.getMasterMultiplexingScript(
-        master,
-        priority,
-        this.env.virtualIp
-      )}
-      ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
-      ${script.setEnvForKubernetes()}
-      ${script.startInstallCrio()}
-      ${script.startInstallKubernetes()}
-      ${AbstractScript.makeMasterKubeConfig()}
-      ${common.getDeleteDuplicationCommandByFilePath(
-        `/etc/sysctl.d/99-kubernetes-cri.conf`
-      )}
-      `;
-  }
-
-  private _getK8sWorkerInstallScript(
-    registry: string,
-    version: string,
-    worker: Node
-  ): string {
-    const script = ScriptFactory.createScript(worker.os.type);
-    return `
-      ${AbstractScript.setHostName(worker.hostName)}
-      ${AbstractScript.registHostName()}
-      ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
-      ${script.setEnvForKubernetes()}
-      ${script.startInstallCrio()}
-      ${script.startInstallKubernetes()}
-      ${common.getDeleteDuplicationCommandByFilePath(
-        `/etc/sysctl.d/99-kubernetes-cri.conf`
-      )}
-      `;
   }
 
   private async _makeMasterCanSchedule() {
