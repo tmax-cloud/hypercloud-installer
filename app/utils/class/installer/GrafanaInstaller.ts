@@ -205,6 +205,7 @@ export default class GrafanaInstaller extends AbstractInstaller {
     return `
     cd ~/${GrafanaInstaller.INSTALL_HOME};
     kubectl delete -f yaml/;
+    rm -rf ~/${GrafanaInstaller.INSTALL_HOME};
     `;
   }
 

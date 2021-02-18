@@ -17,6 +17,7 @@ export default abstract class AbstractScript {
     registry: string,
     version: string,
     virtualIp: string,
+    mainMasterIp: string,
     podSubnet?: string
   ) {
     let podSubnetScript = '';
@@ -31,6 +32,7 @@ export default abstract class AbstractScript {
     sudo sed -i "s|$crioVersion|${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
     sudo sed -i "s|$k8sVersion|${version}|g" ./k8s.config;
     sudo sed -i "s|$apiServer|${virtualIp}|g" ./k8s.config;
+    echo mainMasterIp=${mainMasterIp} >> ./k8s.config
     ${podSubnetScript}
     `;
   }

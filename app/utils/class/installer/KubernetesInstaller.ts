@@ -352,6 +352,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
         registry,
         version,
         this.env.virtualIp,
+        mainMaster.ip,
         podSubnet
       )}
       ${script.setEnvForKubernetes()}
@@ -385,7 +386,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
           Math.floor(Math.random() * 99999999),
           this.env.virtualIp
         )}
-        ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
+        ${AbstractScript.setK8sConfig(
+          registry,
+          version,
+          this.env.virtualIp,
+          mainMaster.ip
+        )}
         ${script.setEnvForKubernetes()}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}
@@ -415,7 +421,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
         worker.cmd = `
         ${AbstractScript.setHostName(worker.hostName)}
         ${AbstractScript.registHostName()}
-        ${AbstractScript.setK8sConfig(registry, version, this.env.virtualIp)}
+        ${AbstractScript.setK8sConfig(
+          registry,
+          version,
+          this.env.virtualIp,
+          mainMaster.ip
+        )}
         ${script.setEnvForKubernetes()}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}

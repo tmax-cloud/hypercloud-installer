@@ -258,6 +258,7 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
       return `
       cd ~/${TektonPipelineInstaller.INSTALL_HOME};
       kubectl delete -f updated.yaml;
+      rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
       `;
     }
     return `
