@@ -6,7 +6,7 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
-import GrafanaInstaller from './grafanaInstaller';
+import GrafanaInstaller from './GrafanaInstaller';
 
 export default class PrometheusInstaller extends AbstractInstaller {
   public static readonly DIR = `install-prometheus`;
