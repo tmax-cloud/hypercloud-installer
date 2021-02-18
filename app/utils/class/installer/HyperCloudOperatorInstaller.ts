@@ -10,11 +10,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class HyperCloudOperatorInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-hypercloud`;
+  public static readonly DIR = `install-hypercloud`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${HyperCloudOperatorInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${HyperCloudOperatorInstaller.INSTALL_HOME}/image`;
 
   public static readonly HPCD_VERSION = `4.1.9.2`;
 
@@ -151,7 +151,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,
@@ -358,7 +358,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
   private _step6(state: any) {
     // FIXME: targetEmail 값 변경 될 가능성 있음
-    const targetEmail = 'admin-tmax.co.kr';
+    const targetEmail = 'hc-admin@tmax.co.kr';
     const newEmail = state.email;
 
     return `

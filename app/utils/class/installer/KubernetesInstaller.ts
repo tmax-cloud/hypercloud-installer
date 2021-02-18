@@ -12,15 +12,15 @@ import * as common from '../../common/common';
 import AbstractScript from '../script/AbstractScript';
 
 export default class KubernetesInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-k8s`;
+  public static readonly DIR = `install-k8s`;
 
   public static readonly ARCHIVE_DIR = `archive_20.07.10`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-k8s`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.DIR}`;
 
   public static readonly IMAGE_REGISTRY_INSTALL_HOME = `${Env.INSTALL_ROOT}/hypercloud-install-guide/Image_Registry/installer`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${KubernetesInstaller.INSTALL_HOME}/image`;
 
   public static readonly ARCHIVE_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}`;
 
@@ -147,7 +147,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,
@@ -389,11 +389,11 @@ export default class KubernetesInstaller extends AbstractInstaller {
         ${script.setEnvForKubernetes()}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}
+        ${masterJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
         ${AbstractScript.makeMasterKubeConfig()}
         ${common.getDeleteDuplicationCommandByFilePath(
           `/etc/sysctl.d/99-kubernetes-cri.conf`
         )}
-        ${masterJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
         `;
         return master.exeCmd(callback);
       })
@@ -419,10 +419,10 @@ export default class KubernetesInstaller extends AbstractInstaller {
         ${script.setEnvForKubernetes()}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}
+        ${workerJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
         ${common.getDeleteDuplicationCommandByFilePath(
           `/etc/sysctl.d/99-kubernetes-cri.conf`
         )}
-        ${workerJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
         `;
         return worker.exeCmd(callback);
       })
