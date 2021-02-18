@@ -7,11 +7,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class IngressControllerSystemInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-ingress`;
+  public static readonly DIR = `install-ingress`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-ingress`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${IngressControllerSystemInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${IngressControllerSystemInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${IngressControllerSystemInstaller.INSTALL_HOME}/image`;
 
   public static readonly INGRESS_NGINX_NAME = `ingress-nginx-shared`;
 
@@ -100,7 +100,7 @@ export default class IngressControllerSystemInstaller extends AbstractInstaller 
       '@@@@@@ START sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerSystemInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerSystemInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,

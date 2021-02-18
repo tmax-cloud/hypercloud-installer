@@ -7,11 +7,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class CatalogControllerInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-catalog`;
+  public static readonly DIR = `install-catalog`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-catalog`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${CatalogControllerInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${CatalogControllerInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${CatalogControllerInstaller.INSTALL_HOME}/image`;
 
   public static readonly VERSION = `0.3.0`;
 
@@ -99,7 +99,7 @@ export default class CatalogControllerInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CatalogControllerInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CatalogControllerInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,

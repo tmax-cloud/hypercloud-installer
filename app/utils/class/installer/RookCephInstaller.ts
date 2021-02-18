@@ -9,11 +9,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class RookCephInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-rookceph`;
+  public static readonly DIR = `install-rookceph`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-rookceph`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${RookCephInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${RookCephInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${RookCephInstaller.INSTALL_HOME}/image`;
 
   // public static readonly CEPH_VERSION = `14.2.9`;
   public static readonly CEPH_VERSION = `15.2.4`;
@@ -132,7 +132,7 @@ export default class RookCephInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${RookCephInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${RookCephInstaller.DIR}/`;
     await scp.sendFile(mainMaster, srcPath, `${RookCephInstaller.IMAGE_HOME}/`);
     console.debug(
       '###### Finish sending the image file to main master node... ######'
@@ -270,11 +270,12 @@ export default class RookCephInstaller extends AbstractInstaller {
     // 설치 시, 선택했던 disk들 초기화 해주는 스크립트 생성
     await Promise.all(
       this.env.nodeList.map((node: Node) => {
+        // /var/lib/rook 은 모든 노드에서 제거
+        node.cmd = `sudo rm -rf /var/lib/rook;`;
         if (disk[node.hostName]) {
-          node.cmd = this._getRookCephRemoveConfigScript(disk[node.hostName]);
-          return node.exeCmd();
+          node.cmd += this._getRookCephRemoveConfigScript(disk[node.hostName]);
         }
-        return Promise.resolve();
+        return node.exeCmd();
       })
     );
     console.debug('###### Finish remove rook-ceph... ######');
@@ -387,7 +388,6 @@ export default class RookCephInstaller extends AbstractInstaller {
     diskNameList.map((d: string) => {
       const { diskName } = d;
       script += `
-      sudo rm -rf /var/lib/rook;
       sudo sgdisk --zap-all /dev/${diskName};
       sudo ls /dev/mapper/ceph-* | sudo xargs -I% -- dmsetup remove %;
       sudo rm -rf /dev/ceph-*;

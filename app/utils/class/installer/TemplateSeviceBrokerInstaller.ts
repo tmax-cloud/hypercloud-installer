@@ -7,11 +7,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-tsb`;
+  public static readonly DIR = `install-tsb`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-tsb`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TemplateSeviceBrokerInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${TemplateSeviceBrokerInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${TemplateSeviceBrokerInstaller.INSTALL_HOME}/image`;
 
   public static readonly VERSION = `4.0.0.6`;
 
@@ -97,7 +97,7 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TemplateSeviceBrokerInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TemplateSeviceBrokerInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,

@@ -6,13 +6,14 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
+import GrafanaInstaller from './grafanaInstaller';
 
 export default class PrometheusInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-prometheus`;
+  public static readonly DIR = `install-prometheus`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-prometheus`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${PrometheusInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${PrometheusInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${PrometheusInstaller.INSTALL_HOME}/image`;
 
   public static readonly PROMETHEUS_VERSION = `2.11.0`;
 
@@ -62,12 +63,25 @@ export default class PrometheusInstaller extends AbstractInstaller {
     await this.preWorkInstall({
       callback
     });
-    setProgress(60);
+
     await this._installMainMaster(state, callback);
+    setProgress(60);
+
+    // grafana 설치
+    const grafanaInstaller = GrafanaInstaller.getInstance;
+    grafanaInstaller.env = this.env;
+    await grafanaInstaller.install({
+      callback
+    });
     setProgress(100);
   }
 
   public async remove() {
+    // grafana 삭제
+    const grafanaInstaller = GrafanaInstaller.getInstance;
+    grafanaInstaller.env = this.env;
+    await grafanaInstaller.remove();
+
     await this._removeMainMaster();
   }
 
@@ -124,7 +138,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${PrometheusInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${PrometheusInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,
@@ -176,7 +190,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
       export PROMETHEUS_VERSION=v${PrometheusInstaller.PROMETHEUS_VERSION};
       export PROMETHEUS_OPERATOR_VERSION=v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION};
       export NODE_EXPORTER_VERSION=v${PrometheusInstaller.NODE_EXPORTER_VERSION};
-      export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
+      # export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
       export KUBE_STATE_METRICS_VERSION=v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION};
       export CONFIGMAP_RELOADER_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION};
       export CONFIGMAP_RELOAD_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION};
@@ -191,7 +205,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
         sudo docker load < prometheus-prometheus_\${PROMETHEUS_VERSION}.tar;
         sudo docker load < prometheus-operator_\${PROMETHEUS_OPERATOR_VERSION}.tar;
         sudo docker load < node-exporter_\${NODE_EXPORTER_VERSION}.tar;
-        sudo docker load < grafana_\${GRAFANA_VERSION}.tar;
+        # sudo docker load < grafana_\${GRAFANA_VERSION}.tar;
         sudo docker load < kube-state-metrics_\${KUBE_STATE_METRICS_VERSION}.tar;
         sudo docker load < config-reloader_\${CONFIGMAP_RELOADER_VERSION}.tar;
         sudo docker load < config-reload_\${CONFIGMAP_RELOAD_VERSION}.tar;
@@ -204,7 +218,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
         sudo docker pull quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION};
         sudo docker pull quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
         sudo docker pull quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        sudo docker pull grafana/grafana:\${GRAFANA_VERSION};
+        # sudo docker pull grafana/grafana:\${GRAFANA_VERSION};
         sudo docker pull quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
         sudo docker pull quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
         sudo docker pull quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
@@ -218,7 +232,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
         sudo docker tag quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION} \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
         sudo docker tag quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION} \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
         sudo docker tag quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION} \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION};
+        # sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION};
         sudo docker tag quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION} \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
         sudo docker tag quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION} \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
         sudo docker tag quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION} \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
@@ -229,7 +243,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
         sudo docker push \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
         sudo docker push \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
         sudo docker push \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION};
+        # sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION};
         sudo docker push \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
         sudo docker push \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
         sudo docker push \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
@@ -290,7 +304,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
       export PROMETHEUS_VERSION=v${PrometheusInstaller.PROMETHEUS_VERSION};
       export PROMETHEUS_OPERATOR_VERSION=v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION};
       export NODE_EXPORTER_VERSION=v${PrometheusInstaller.NODE_EXPORTER_VERSION};
-      export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
+      # export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
       export KUBE_STATE_METRICS_VERSION=v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION};
       export CONFIGMAP_RELOADER_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION};
       export CONFIGMAP_RELOAD_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION};
@@ -300,7 +314,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
 
       cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/;
       sed -i 's/{ALERTMANAGER_VERSION}/'\${ALERTMANAGER_VERSION}'/g' alertmanager-alertmanager.yaml;
-      sed -i 's/{GRAFANA_VERSION}/'\${GRAFANA_VERSION}'/g' grafana-deployment.yaml;
+      # sed -i 's/{GRAFANA_VERSION}/'\${GRAFANA_VERSION}'/g' grafana-deployment.yaml;
       sed -i 's/{KUBE_RBAC_PROXY_VERSION}/'\${KUBE_RBAC_PROXY_VERSION}'/g' kube-state-metrics-deployment.yaml;
       sed -i 's/{KUBE_STATE_METRICS_VERSION}/'\${KUBE_STATE_METRICS_VERSION}'/g' kube-state-metrics-deployment.yaml;
       sed -i 's/{NODE_EXPORTER_VERSION}/'\${NODE_EXPORTER_VERSION}'/g' node-exporter-daemonset.yaml;
@@ -358,7 +372,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
 
     kubectl create -f manifests/;
     # kubectl get svc -n monitoring prometheus-k8s -o yaml | sed "s|type: NodePort|type: LoadBalancer|g" | kubectl replace -f -;
-    kubectl get svc -n monitoring grafana -o yaml | sed "s|type: ClusterIP|type: LoadBalancer|g" | kubectl replace -f -;
+    # kubectl get svc -n monitoring grafana -o yaml | sed "s|type: ClusterIP|type: LoadBalancer|g" | kubectl replace -f -;
     `;
   }
 
@@ -490,7 +504,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
     return `
     cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/;
     sed -i "s| quay.io/prometheus/alertmanager| ${this.env.registry}/prometheus/alertmanager|g" alertmanager-alertmanager.yaml;
-    sed -i "s| grafana/grafana| ${this.env.registry}/grafana|g" grafana-deployment.yaml;
+    # sed -i "s| grafana/grafana| ${this.env.registry}/grafana|g" grafana-deployment.yaml;
     sed -i "s| quay.io/coreos/kube-rbac-proxy| ${this.env.registry}/coreos/kube-rbac-proxy|g" kube-state-metrics-deployment.yaml;
     sed -i "s| quay.io/coreos/kube-state-metrics| ${this.env.registry}/coreos/kube-state-metrics|g" kube-state-metrics-deployment.yaml;
     sed -i "s| quay.io/prometheus/node-exporter| ${this.env.registry}/prometheus/node-exporter|g" node-exporter-daemonset.yaml;

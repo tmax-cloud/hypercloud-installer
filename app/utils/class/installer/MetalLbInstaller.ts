@@ -9,11 +9,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class MetalLbInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-metallb`;
+  public static readonly DIR = `install-metallb`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-metallb`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${MetalLbInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${MetalLbInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${MetalLbInstaller.INSTALL_HOME}/image`;
 
   public static readonly METALLB_VERSION = `0.8.2`;
 
@@ -105,7 +105,7 @@ export default class MetalLbInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${MetalLbInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${MetalLbInstaller.DIR}/`;
     await scp.sendFile(mainMaster, srcPath, `${MetalLbInstaller.IMAGE_HOME}/`);
     console.debug(
       '###### Finish sending the image file to main master node... ######'

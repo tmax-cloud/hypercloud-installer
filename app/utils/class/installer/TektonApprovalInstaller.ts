@@ -5,11 +5,11 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class TektonApprovalInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-tekton`;
+  public static readonly DIR = `install-tekton`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonApprovalInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${TektonApprovalInstaller.INSTALL_HOME}/image`;
 
   // TODO: version 처리 안됨
   public static readonly VERSION = `0.0.3`;
@@ -81,7 +81,7 @@ export default class TektonApprovalInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonApprovalInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonApprovalInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,

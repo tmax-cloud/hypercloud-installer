@@ -10,11 +10,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class CniInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-cni`;
+  public static readonly DIR = `install-cni`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/install-cni`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${CniInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${CniInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${CniInstaller.INSTALL_HOME}/image`;
 
   public static readonly CNI_VERSION = `3.13.4`;
 
@@ -110,7 +110,7 @@ export default class CniInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CniInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${CniInstaller.DIR}/`;
     await scp.sendFile(mainMaster, srcPath, `${CniInstaller.IMAGE_HOME}/`);
     console.debug(
       '###### Finish sending the image file to main master node... ######'

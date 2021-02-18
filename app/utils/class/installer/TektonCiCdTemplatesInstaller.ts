@@ -5,11 +5,11 @@ import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 
 export default class TektonCiCdTemplatesInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-tekton`;
+  public static readonly DIR = `install-tekton`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${TektonCiCdTemplatesInstaller.INSTALL_HOME}/image`;
 
   public static readonly VERSION = `1.1.5`;
 
@@ -80,7 +80,7 @@ export default class TektonCiCdTemplatesInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonCiCdTemplatesInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,

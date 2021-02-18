@@ -14,21 +14,21 @@ export default class CentosScript extends AbstractScript {
     return `
     #install kubernetes
     if [[ -z \${k8sVersion} ]]; then
-    k8sVersion=1.17.6
+        k8sVersion=1.17.6
     else
-    k8sVersion=\${k8sVersion}
+        k8sVersion=\${k8sVersion}
     fi
 
     if [[ -z \${apiServer} ]]; then
-    apiServer=127.0.0.1
+        apiServer=127.0.0.1
     else
         apiServer=\${apiServer}
     fi
 
     if [[ -z \${podSubnet} ]]; then
-      podSubnet=10.244.0.0/16
+        podSubnet=10.244.0.0/16
     else
-       podSubnet=\${podSubnet}
+        podSubnet=\${podSubnet}
     fi
 
     #install kubernetes components
@@ -40,7 +40,8 @@ export default class CentosScript extends AbstractScript {
 
     #change kubeadm yaml
     sudo sed -i "s|{k8sVersion}|v\${k8sVersion}|g" \${yaml_dir}/kubeadm-config.yaml
-    sudo sed -i "s|{apiServer}|\${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|advertiseAddress: {apiServer}|advertiseAddress: \${mainMasterIp}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|controlPlaneEndpoint: {apiServer}|controlPlaneEndpoint: \${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|{podSubnet}|\${podSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
     if [[ "\${imageRegistry}" == "" ]]; then
     sudo sed -i "s|{imageRegistry}/|\${imageRegistry}|g" \${yaml_dir}/kubeadm-config.yaml

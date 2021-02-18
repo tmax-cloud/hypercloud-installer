@@ -7,11 +7,11 @@ import ScriptFactory from '../script/ScriptFactory';
 import CONST from '../../constants/constant';
 
 export default class TektonPipelineInstaller extends AbstractInstaller {
-  public static readonly IMAGE_DIR = `install-tekton`;
+  public static readonly DIR = `install-tekton`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonPipelineInstaller.IMAGE_DIR}`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${TektonPipelineInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${Env.INSTALL_ROOT}/${TektonPipelineInstaller.IMAGE_DIR}`;
+  public static readonly IMAGE_HOME = `${TektonPipelineInstaller.INSTALL_HOME}/image`;
 
   // TODO: version 처리 안됨
   public static readonly VERSION = `0.12.1`;
@@ -83,7 +83,7 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
       '@@@@@@ Start sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonPipelineInstaller.IMAGE_DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${TektonPipelineInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,
@@ -258,6 +258,7 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
       return `
       cd ~/${TektonPipelineInstaller.INSTALL_HOME};
       kubectl delete -f updated.yaml;
+      rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
       `;
     }
     return `
