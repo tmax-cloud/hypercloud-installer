@@ -1,3 +1,20 @@
+# v4.1.11 (2020.02.18)
+
+### Features
+
+- Grafana 설치 git project 분리
+
+### Fixes
+
+- kubeadm join 후 kubernetes config 파일 생성되도록 수정 (IMS: 253893)
+- hypercloud-operator 설치 시, 6.default-auth-object-init.yaml에 sed하는 문자열 변경 (IMS: 253682)
+  - admin-tmax.co.kr -> hc-admin@tmax.co.kr
+- rook-ceph 제거 시, 모든 노드에서 /var/lib/rook 폴더 제거 (IMS: 253344)
+- hypercloud-webhook 버전 변경 (IMS: 253058)
+- kubeconfig.yaml파일의 advertiseAddress 부분에 MainMaster IP들어가도록 수정
+
+---
+
 # v4.1.10 (2020.02.04)
 
 ### Features
