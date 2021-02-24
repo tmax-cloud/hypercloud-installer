@@ -19,7 +19,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
   public static readonly POSTGRES_VERSION = `9.6.2-alpine`;
 
-  public static readonly HYPERAUTH_VERSION = `1.0.11.5`;
+  public static readonly HYPERAUTH_VERSION = `1.0.14.41`;
 
   // singleton
   private static instance: HyperAuthInstaller;

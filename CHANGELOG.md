@@ -1,3 +1,17 @@
+# v4.1.12 (2020.02.24)
+
+### Features
+
+- HyperAuth 버전 변경(1.0.14.41)
+- Console 버전 변경(4.1.4.23)
+- Console 설치 git project 분리 적용
+
+### Fixes
+
+-
+
+---
+
 # v4.1.11 (2020.02.18)
 
 ### Features

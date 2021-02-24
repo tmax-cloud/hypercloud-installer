@@ -11,6 +11,7 @@ const CONST = {
   INGRESS_REPO: 'https://github.com/tmax-cloud/install-ingress.git',
   HYPERCLOUD_REPO: 'https://github.com/tmax-cloud/install-hypercloud.git',
   GRAFANA_REPO: 'https://github.com/tmax-cloud/install-grafana.git',
+  CONSOLE_REPO: 'https://github.com/tmax-cloud/install-console.git',
   SECRET_WATCHER_REPO:
     'https://github.com/tmax-cloud/install-secretwatcher.git',
   TSB_REPO: 'https://github.com/tmax-cloud/install-tsb.git',

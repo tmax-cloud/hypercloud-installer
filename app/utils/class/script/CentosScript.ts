@@ -40,6 +40,7 @@ export default class CentosScript extends AbstractScript {
 
     #change kubeadm yaml
     sudo sed -i "s|{k8sVersion}|v\${k8sVersion}|g" \${yaml_dir}/kubeadm-config.yaml
+    #sudo sed -i "s|advertiseAddress: {apiServer}|advertiseAddress: \${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|advertiseAddress: {apiServer}|advertiseAddress: \${mainMasterIp}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|controlPlaneEndpoint: {apiServer}|controlPlaneEndpoint: \${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|{podSubnet}|\${podSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
