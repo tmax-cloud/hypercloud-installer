@@ -103,8 +103,8 @@ const createWindow = async () => {
   const menuBuilder = new MenuBuilder(mainWindow);
   menuBuilder.buildMenu();
 
-  // 개발자 도구 추가
-  mainWindow.webContents.openDevTools();
+  // production version에 개발자 도구 추가
+  // mainWindow.webContents.openDevTools();
 
   // app에서 menu bar 삭제
   mainWindow.setMenuBarVisibility(false);
