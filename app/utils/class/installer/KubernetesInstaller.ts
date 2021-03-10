@@ -24,6 +24,10 @@ export default class KubernetesInstaller extends AbstractInstaller {
 
   public static readonly ARCHIVE_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}`;
 
+  // public static readonly K8S_VERSION = `1.19.4`;
+
+  // public static readonly CRIO_VERSION = `1.19:1.19.1`;
+
   public static readonly K8S_VERSION = `1.17.8`;
 
   public static readonly CRIO_VERSION = `1.17`;
@@ -337,6 +341,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
     podSubnet: string,
     callback: any
   ) {
+    /**
+     * k8s설치는 prolinux지원, 호스트네임 등록, keepalived 설정 등
+     * 여러 신경써야할 부분들이 있어서
+     * 담당자가 제공해주는 스크립트로는 설치하기가 애매함...
+     * 따라서 코드상에서 스크립트를 자유롭게 넣는 방식으로 구현해놓음
+     */
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     const script = ScriptFactory.createScript(mainMaster.os.type);

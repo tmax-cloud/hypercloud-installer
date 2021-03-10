@@ -101,6 +101,7 @@ export default class TektonMailNotifierInstaller extends AbstractInstaller {
   }
 
   protected cloneGitFile(param?: any): Promise<any> {
+    // TektonPipelineInstaller에서 수행
     throw new Error('Method not implemented.');
   }
 
