@@ -62,7 +62,7 @@ export default class CentosScript extends AbstractScript {
 
     #swapoff
     sudo swapoff -a
-    #/etc/fstab에서 swap들어간 줄 주석처리
+    ## git에서 제공하는 스크립트와 다른 부분 /etc/fstab에서 swap들어간 줄 주석처리 ##
     sed -e '/swap/ s/^#*/#/' -i /etc/fstab
 
     #selinux mode
@@ -204,7 +204,7 @@ EOF`;
     nopreempt
     authentication {
       auth_type PASS
-      auth_pass $ place secure password here.
+      auth_pass 1234
       }
     virtual_ipaddress {
       ${vip}
