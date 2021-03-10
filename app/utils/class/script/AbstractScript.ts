@@ -29,8 +29,8 @@ export default abstract class AbstractScript {
     sed -i 's|\\r$||g' k8s.config;
     . k8s.config;
     sudo sed -i "s|$imageRegistry|${registry}|g" ./k8s.config;
-    sudo sed -i "s|$crioVersion|${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
     sudo sed -i "s|$k8sVersion|${version}|g" ./k8s.config;
+    sudo sed -i "s|$crioVersion|${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
     sudo sed -i "s|$apiServer|${virtualIp}|g" ./k8s.config;
     echo mainMasterIp=${mainMasterIp} >> ./k8s.config
     ${podSubnetScript}
