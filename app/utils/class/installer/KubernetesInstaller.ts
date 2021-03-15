@@ -24,13 +24,13 @@ export default class KubernetesInstaller extends AbstractInstaller {
 
   public static readonly ARCHIVE_HOME = `${Env.INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}`;
 
-  // public static readonly K8S_VERSION = `1.19.4`;
+  public static readonly K8S_VERSION = `1.19.4`;
 
-  // public static readonly CRIO_VERSION = `1.19:1.19.1`;
+  public static readonly CRIO_VERSION = `1.19:1.19.1`;
 
-  public static readonly K8S_VERSION = `1.17.8`;
+  // public static readonly K8S_VERSION = `1.17.8`;
 
-  public static readonly CRIO_VERSION = `1.17`;
+  // public static readonly CRIO_VERSION = `1.17`;
 
   // singleton
   private static instance: KubernetesInstaller;
@@ -57,6 +57,12 @@ export default class KubernetesInstaller extends AbstractInstaller {
     setProgress: Function;
   }) {
     const { registry, version, podSubnet, callback, setProgress } = param;
+    /**
+     * k8s설치는 prolinux지원, 호스트네임 등록, keepalived 설정 등
+     * 여러 신경써야할 부분들이 있어서
+     * 담당자가 제공해주는 스크립트로는 설치하기가 애매함...
+     * 따라서 코드상에서 스크립트를 하드코딩으로 넣는 방식으로 구현해놓음
+     */
 
     await this._envSetting({
       registry,
@@ -341,18 +347,10 @@ export default class KubernetesInstaller extends AbstractInstaller {
     podSubnet: string,
     callback: any
   ) {
-    /**
-     * k8s설치는 prolinux지원, 호스트네임 등록, keepalived 설정 등
-     * 여러 신경써야할 부분들이 있어서
-     * 담당자가 제공해주는 스크립트로는 설치하기가 애매함...
-     * 따라서 코드상에서 스크립트를 자유롭게 넣는 방식으로 구현해놓음
-     */
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     const script = ScriptFactory.createScript(mainMaster.os.type);
     mainMaster.cmd = `
-      ${AbstractScript.setHostName(mainMaster.hostName)}
-      ${AbstractScript.registHostName()}
       ${script.getMasterMultiplexingScript(
         mainMaster,
         99999999,
@@ -365,7 +363,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
         mainMaster.ip,
         podSubnet
       )}
-      ${script.setEnvForKubernetes()}
+      ${script.setEnvForKubernetes(mainMaster.hostName)}
       ${script.startInstallCrio()}
       ${script.startInstallKubernetes()}
       ${AbstractScript.initKube()}
@@ -389,8 +387,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
       masterArr.map((master, index) => {
         const script = ScriptFactory.createScript(master.os.type);
         master.cmd = `
-        ${AbstractScript.setHostName(master.hostName)}
-        ${AbstractScript.registHostName()}
         ${script.getMasterMultiplexingScript(
           master,
           Math.floor(Math.random() * 99999999),
@@ -402,7 +398,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
           this.env.virtualIp,
           mainMaster.ip
         )}
-        ${script.setEnvForKubernetes()}
+        ${script.setEnvForKubernetes(master.hostName)}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}
         ${masterJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;
@@ -429,15 +425,13 @@ export default class KubernetesInstaller extends AbstractInstaller {
       workerArr.map(worker => {
         const script = ScriptFactory.createScript(worker.os.type);
         worker.cmd = `
-        ${AbstractScript.setHostName(worker.hostName)}
-        ${AbstractScript.registHostName()}
         ${AbstractScript.setK8sConfig(
           registry,
           version,
           this.env.virtualIp,
           mainMaster.ip
         )}
-        ${script.setEnvForKubernetes()}
+        ${script.setEnvForKubernetes(worker.hostName)}
         ${script.startInstallCrio()}
         ${script.startInstallKubernetes()}
         ${workerJoinCmd.trim()} --cri-socket=/var/run/crio/crio.sock;

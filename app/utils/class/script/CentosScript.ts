@@ -52,8 +52,10 @@ export default class CentosScript extends AbstractScript {
     `;
   }
 
-  setEnvForKubernetes(): string {
+  setEnvForKubernetes(hostName: string): string {
     return `
+    ${AbstractScript.setHostName(hostName)}
+    ${AbstractScript.registHostName()}
     ${AbstractScript.setInstallDir()}
 
     # disable firewall
@@ -96,6 +98,7 @@ EOF
     # remove cni0
     sudo rm -rf  /etc/cni/net.d/100-crio-bridge.conf
     sudo rm -rf  /etc/cni/net.d/200-loopback.conf
+    sudo rm -rf /etc/cni/net.d/87-podman-bridge.conflist
 
     # edit crio config
     sudo sed -i 's/\\"\\/usr\\/libexec\\/cni\\"/\\"\\/usr\\/libexec\\/cni\\"\\,\\"\\/opt\\/cni\\/bin\\"/g' /etc/crio/crio.conf
