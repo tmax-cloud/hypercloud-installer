@@ -15,7 +15,7 @@ export default class MetalLbInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${MetalLbInstaller.INSTALL_HOME}/image`;
 
-  public static readonly METALLB_VERSION = `0.8.2`;
+  public static readonly METALLB_VERSION = `0.9.3`;
 
   // singleton
   private static instance: MetalLbInstaller;
@@ -216,11 +216,15 @@ export default class MetalLbInstaller extends AbstractInstaller {
   private _getInstallScript(data: Array<string>) {
     return `
       cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-      sed -i 's/v0.8.2/'v${MetalLbInstaller.METALLB_VERSION}'/g' metallb_v${
+      sed -i 's/v0.9.3/'v${MetalLbInstaller.METALLB_VERSION}'/g' metallb_v${
       MetalLbInstaller.METALLB_VERSION
     }.yaml;
       ${this._setMetalLbArea(data)}
+      kubectl apply -f metallb_namespace_v${
+        MetalLbInstaller.METALLB_VERSION
+      }.yaml;
       kubectl apply -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+      kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
       kubectl apply -f metallb_cidr.yaml;
       `;
   }
@@ -228,8 +232,9 @@ export default class MetalLbInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     return `
     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
     kubectl delete -f metallb_cidr.yaml;
+    kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+    kubectl delete -f metallb_namespace_v${MetalLbInstaller.METALLB_VERSION}.yaml;
     rm -rf ~/${MetalLbInstaller.INSTALL_HOME};
     `;
   }
