@@ -16,9 +16,9 @@ export default class CniInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${CniInstaller.INSTALL_HOME}/image`;
 
-  public static readonly CNI_VERSION = `3.13.4`;
+  public static readonly CNI_VERSION = `3.16.6`;
 
-  public static readonly CTL_VERSION = `3.15.0`;
+  public static readonly CTL_VERSION = `3.16.6`;
 
   // singleton
   private static instance: CniInstaller;
@@ -172,8 +172,8 @@ export default class CniInstaller extends AbstractInstaller {
         sudo docker pull calico/cni:\${CNI_VERSION};
         sudo docker pull calico/kube-controllers:\${CNI_VERSION};
         sudo docker pull calico/ctl:\${CTL_VERSION};
-        # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/CNI/calico_${CniInstaller.CNI_VERSION}.yaml > calico.yaml;
-        # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/CNI/calicoctl_${CniInstaller.CTL_VERSION}.yaml > calicoctl.yaml;
+        # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/CNI/calico_v${CniInstaller.CNI_VERSION}.yaml > calico.yaml;
+        # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/CNI/calicoctl_v${CniInstaller.CTL_VERSION}.yaml > calicoctl.yaml;
         `;
     }
     return `
@@ -232,21 +232,21 @@ export default class CniInstaller extends AbstractInstaller {
     let script = `
       . ~/${KubernetesInstaller.INSTALL_HOME}/manifest/k8s.config;
       cd ~/${CniInstaller.INSTALL_HOME}/manifest;
-      sed -i 's/v3.13.4/'v${CniInstaller.CNI_VERSION}'/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-      sed -i 's|10.0.0.0/16|'$podSubnet'|g' calico_${CniInstaller.CNI_VERSION}.yaml;
+      sed -i 's/v3.16.6/'v${CniInstaller.CNI_VERSION}'/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+      sed -i 's|10.0.0.0/16|'$podSubnet'|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
     `;
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
     if (process.env.RESOURCE === 'low') {
       script += `
-        sed -i 's/cpu/#cpu/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-        sed -i 's/memory/#memory/g' calico_${CniInstaller.CNI_VERSION}.yaml;
+        sed -i 's/cpu/#cpu/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+        sed -i 's/memory/#memory/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
       `;
     }
 
     script += `
-      kubectl apply -f calico_${CniInstaller.CNI_VERSION}.yaml;
-      kubectl apply -f calicoctl_${CniInstaller.CTL_VERSION}.yaml;
+      kubectl apply -f calico_v${CniInstaller.CNI_VERSION}.yaml;
+      kubectl apply -f calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
     `;
     return script;
   }
@@ -254,8 +254,8 @@ export default class CniInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     return `
     cd ~/${CniInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f calico_${CniInstaller.CNI_VERSION}.yaml;
-    kubectl delete -f calicoctl_${CniInstaller.CTL_VERSION}.yaml;
+    kubectl delete -f calico_v${CniInstaller.CNI_VERSION}.yaml;
+    kubectl delete -f calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
     rm -rf ~/${CniInstaller.INSTALL_HOME};
     `;
   }
@@ -265,10 +265,10 @@ export default class CniInstaller extends AbstractInstaller {
   //   const { mainMaster } = this.env.getNodesSortedByRole();
   //   mainMaster.cmd = `
   //   ${common.getCopyCommandByFilePath(
-  //     `~/${CniInstaller.INSTALL_HOME}/calico_${CniInstaller.CNI_VERSION}.yaml`
+  //     `~/${CniInstaller.INSTALL_HOME}/calico_v${CniInstaller.CNI_VERSION}.yaml`
   //   )}
   //   ${common.getCopyCommandByFilePath(
-  //     `~/${CniInstaller.INSTALL_HOME}/calicoctl_${CniInstaller.CTL_VERSION}.yaml`
+  //     `~/${CniInstaller.INSTALL_HOME}/calicoctl_v${CniInstaller.CTL_VERSION}.yaml`
   //   )}
   //   `;
   //   await mainMaster.exeCmd(callback);
@@ -279,17 +279,17 @@ export default class CniInstaller extends AbstractInstaller {
     // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
     return `
     cd ~/${CniInstaller.INSTALL_HOME}/manifest;
-    # sed -i 's/calico\\/cni/'${this.env.registry}'\\/calico\\/cni/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    # sed -i 's/calico\\/pod2daemon-flexvol/'${this.env.registry}'\\/calico\\/pod2daemon-flexvol/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    # sed -i 's/calico\\/node/'${this.env.registry}'\\/calico\\/node/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    # sed -i 's/calico\\/kube-controllers/'${this.env.registry}'\\/calico\\/kube-controllers/g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    # sed -i 's/calico\\/ctl/'${this.env.registry}'\\/calico\\/ctl/g' calicoctl_${CniInstaller.CTL_VERSION}.yaml;
+    # sed -i 's/calico\\/cni/'${this.env.registry}'\\/calico\\/cni/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    # sed -i 's/calico\\/pod2daemon-flexvol/'${this.env.registry}'\\/calico\\/pod2daemon-flexvol/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    # sed -i 's/calico\\/node/'${this.env.registry}'\\/calico\\/node/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    # sed -i 's/calico\\/kube-controllers/'${this.env.registry}'\\/calico\\/kube-controllers/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    # sed -i 's/calico\\/ctl/'${this.env.registry}'\\/calico\\/ctl/g' calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
 
-    sed -i 's| calico/cni| '${this.env.registry}'/calico/cni|g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    sed -i 's| calico/pod2daemon-flexvol| '${this.env.registry}'/calico/pod2daemon-flexvol|g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    sed -i 's| calico/node| '${this.env.registry}'/calico/node|g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    sed -i 's| calico/kube-controllers| '${this.env.registry}'/calico/kube-controllers|g' calico_${CniInstaller.CNI_VERSION}.yaml;
-    sed -i 's| calico/ctl| '${this.env.registry}'/calico/ctl|g' calicoctl_${CniInstaller.CTL_VERSION}.yaml;
+    sed -i 's| calico/cni| '${this.env.registry}'/calico/cni|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    sed -i 's| calico/pod2daemon-flexvol| '${this.env.registry}'/calico/pod2daemon-flexvol|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    sed -i 's| calico/node| '${this.env.registry}'/calico/node|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    sed -i 's| calico/kube-controllers| '${this.env.registry}'/calico/kube-controllers|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    sed -i 's| calico/ctl| '${this.env.registry}'/calico/ctl|g' calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
     `;
   }
 }
