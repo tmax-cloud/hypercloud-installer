@@ -16,7 +16,7 @@ const CONST = {
     'https://github.com/tmax-cloud/install-secretwatcher.git',
   TSB_REPO: 'https://github.com/tmax-cloud/install-tsb.git',
   TEKTON_REPO: 'https://github.com/tmax-cloud/install-tekton.git',
-  GIT_BRANCH: '4.1',
+  GIT_BRANCH: '5.0',
   PRODUCT: {
     KUBERNETES: {
       NAME: 'Kubernetes',
