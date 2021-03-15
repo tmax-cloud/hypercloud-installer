@@ -148,7 +148,7 @@ export default abstract class AbstractScript {
    */
   abstract startInstallKubernetes(): string;
 
-  abstract setEnvForKubernetes(): string;
+  abstract setEnvForKubernetes(hostName: string): string;
 
   abstract startInstallCrio(): string;
 
