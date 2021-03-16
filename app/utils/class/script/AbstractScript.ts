@@ -22,16 +22,16 @@ export default abstract class AbstractScript {
   ) {
     let podSubnetScript = '';
     if (podSubnet) {
-      podSubnetScript = `sudo sed -i "s|$podSubnet|${podSubnet}|g" ./k8s.config;`;
+      podSubnetScript = `sudo sed -i "s|podSubnet=$podSubnet|podSubnet=${podSubnet}|g" ./k8s.config;`;
     }
     return `
     cd ~/${KubernetesInstaller.INSTALL_HOME}/manifest;
     sed -i 's|\\r$||g' k8s.config;
     . k8s.config;
-    sudo sed -i "s|$imageRegistry|${registry}|g" ./k8s.config;
-    sudo sed -i "s|$k8sVersion|${version}|g" ./k8s.config;
-    sudo sed -i "s|$crioVersion|${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
-    sudo sed -i "s|$apiServer|${virtualIp}|g" ./k8s.config;
+    sudo sed -i "s|imageRegistry=$imageRegistry|imageRegistry=${registry}|g" ./k8s.config;
+    sudo sed -i "s|k8sVersion=$k8sVersion|k8sVersion=${version}|g" ./k8s.config;
+    sudo sed -i "s|crioVersion=$crioVersion|crioVersion=${KubernetesInstaller.CRIO_VERSION}|g" ./k8s.config;
+    sudo sed -i "s|apiServer=$apiServer|apiServer=${virtualIp}|g" ./k8s.config;
     echo mainMasterIp=${mainMasterIp} >> ./k8s.config
     ${podSubnetScript}
     `;

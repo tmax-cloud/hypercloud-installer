@@ -205,10 +205,10 @@ export default class KubernetesInstaller extends AbstractInstaller {
         node.cmd = script.cloneGitFile(CONST.K8S_REPO, CONST.GIT_BRANCH);
 
         // FIXME: 현재 이전 git도 임시로 받음(repo 나누어지지 않은 모듈 설치 위해)
-        node.cmd += script.cloneGitFile(
-          `https://github.com/tmax-cloud/hypercloud-install-guide.git`,
-          CONST.GIT_BRANCH
-        );
+        // node.cmd += script.cloneGitFile(
+        //   `https://github.com/tmax-cloud/hypercloud-install-guide.git`,
+        //   '4.1'
+        // );
         return node.exeCmd(callback);
       })
     );
