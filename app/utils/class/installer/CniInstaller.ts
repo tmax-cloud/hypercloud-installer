@@ -230,23 +230,33 @@ export default class CniInstaller extends AbstractInstaller {
 
   private _getInstallScript(): string {
     let script = `
-      . ~/${KubernetesInstaller.INSTALL_HOME}/manifest/k8s.config;
       cd ~/${CniInstaller.INSTALL_HOME}/manifest;
-      sed -i 's/v3.16.6/'v${CniInstaller.CNI_VERSION}'/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
-      sed -i 's|10.0.0.0/16|'$podSubnet'|g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+      sudo sed -i 's|\\r$||g' cni.config;
+      . cni.config;
+
+      sudo sed -i "s|$cni_version|v${CniInstaller.CNI_VERSION}|g" ./cni.config;
+      sudo sed -i "s|$ctl_version|v${CniInstaller.CTL_VERSION}|g" ./cni.config;
+
+      podSubnet=\`kubectl get cm -o yaml -n kube-system kubeadm-config | grep podSubnet | cut -d":" -f2 | tr -d ' '\`;
+      sudo sed -i "s|$pod_cidr|$podSubnet|g" ./cni.config;
     `;
 
-    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
-    if (process.env.RESOURCE === 'low') {
-      script += `
-        sed -i 's/cpu/#cpu/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
-        sed -i 's/memory/#memory/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
-      `;
+    if (this.env.registry) {
+      script += `sudo sed -i "s|$registry|${this.env.registry}|g" ./cni.config;`;
+    } else {
+      script += `sudo sed -i "s|$registry||g" ./cni.config;`;
     }
 
+    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
+    // if (process.env.RESOURCE === 'low') {
+    //   script += `
+    //     sed -i 's/cpu/#cpu/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    //     sed -i 's/memory/#memory/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
+    //   `;
+    // }
+
     script += `
-      kubectl apply -f calico_v${CniInstaller.CNI_VERSION}.yaml;
-      kubectl apply -f calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
+      ./install-cni.sh install
     `;
     return script;
   }
@@ -254,8 +264,7 @@ export default class CniInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     return `
     cd ~/${CniInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f calico_v${CniInstaller.CNI_VERSION}.yaml;
-    kubectl delete -f calicoctl_v${CniInstaller.CTL_VERSION}.yaml;
+    ./install-cni.sh uninstall
     rm -rf ~/${CniInstaller.INSTALL_HOME};
     `;
   }

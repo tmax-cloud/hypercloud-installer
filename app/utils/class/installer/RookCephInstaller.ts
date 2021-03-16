@@ -151,10 +151,8 @@ export default class RookCephInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start clone the GIT file at each node... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     const script = ScriptFactory.createScript(mainMaster.os.type);
-    mainMaster.cmd = script.cloneGitFile(
-      CONST.ROOK_CEPH_REPO,
-      CONST.GIT_BRANCH
-    );
+    // FIXME: 4.1 branch에서 설치 중
+    mainMaster.cmd = script.cloneGitFile(CONST.ROOK_CEPH_REPO, '4.1');
     await mainMaster.exeCmd(callback);
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
@@ -326,7 +324,7 @@ export default class RookCephInstaller extends AbstractInstaller {
     return `
     cd ~/${RookCephInstaller.INSTALL_HOME}/manifest;
     ./hcsctl uninstall ./install;
-    rm -rf ~/${RookCephInstaller.INSTALL_HOME};
+    # rm -rf ~/${RookCephInstaller.INSTALL_HOME};
     `;
   }
 
