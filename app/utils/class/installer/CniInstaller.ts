@@ -208,7 +208,13 @@ export default class CniInstaller extends AbstractInstaller {
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getInstallScript();
+
+    // Step1. cni.config 설정
+    mainMaster.cmd = this._step1();
+    await mainMaster.exeCmd(callback);
+
+    // Step2. install
+    mainMaster.cmd = this._step2();
     await mainMaster.exeCmd(callback);
     console.debug('###### Finish installing main Master... ######');
   }
@@ -228,7 +234,7 @@ export default class CniInstaller extends AbstractInstaller {
     console.debug('###### Finish remove main Master... ######');
   }
 
-  private _getInstallScript(): string {
+  private _step1(): string {
     let script = `
       cd ~/${CniInstaller.INSTALL_HOME}/manifest;
       sudo sed -i 's|\\r$||g' cni.config;
@@ -247,18 +253,14 @@ export default class CniInstaller extends AbstractInstaller {
       script += `sudo sed -i "s|$registry||g" ./cni.config;`;
     }
 
-    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
-    // if (process.env.RESOURCE === 'low') {
-    //   script += `
-    //     sed -i 's/cpu/#cpu/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
-    //     sed -i 's/memory/#memory/g' calico_v${CniInstaller.CNI_VERSION}.yaml;
-    //   `;
-    // }
-
-    script += `
-      ./install-cni.sh install
-    `;
     return script;
+  }
+
+  private _step2(): string {
+    return `
+      cd ~/${CniInstaller.INSTALL_HOME}/manifest;
+      sudo ./install-cni.sh install
+    `;
   }
 
   private _getRemoveScript(): string {
