@@ -6,12 +6,12 @@ import Env, { NETWORK_TYPE } from '../Env';
 import CONST from '../../constants/constant';
 import ScriptFactory from '../script/ScriptFactory';
 
-export default class IngressControllerSharedInstaller extends AbstractInstaller {
+export default class IngressControllerInstaller extends AbstractInstaller {
   public static readonly DIR = `install-ingress`;
 
-  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${IngressControllerSharedInstaller.DIR}`;
+  public static readonly INSTALL_HOME = `${Env.INSTALL_ROOT}/${IngressControllerInstaller.DIR}`;
 
-  public static readonly IMAGE_HOME = `${IngressControllerSharedInstaller.INSTALL_HOME}/image`;
+  public static readonly IMAGE_HOME = `${IngressControllerInstaller.INSTALL_HOME}/image`;
 
   public static readonly INGRESS_NGINX_NAME = `ingress-nginx-shared`;
 
@@ -22,26 +22,31 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
   public static readonly KUBE_WEBHOOK_CERTGEN_VERSION = `1.2.2`;
 
   // singleton
-  private static instance: IngressControllerSharedInstaller;
+  private static instance: IngressControllerInstaller;
 
   private constructor() {
     super();
   }
 
   static get getInstance() {
-    if (!IngressControllerSharedInstaller.instance) {
-      IngressControllerSharedInstaller.instance = new IngressControllerSharedInstaller();
+    if (!IngressControllerInstaller.instance) {
+      IngressControllerInstaller.instance = new IngressControllerInstaller();
     }
     return this.instance;
   }
 
-  public async install(param: { callback: any; setProgress: Function }) {
-    const { callback } = param;
+  public async install(param: {
+    callback: any;
+    setProgress: Function;
+    shared: boolean;
+    systemd: boolean;
+  }) {
+    const { callback, shared, systemd } = param;
 
     await this.preWorkInstall({
       callback
     });
-    await this._installMainMaster(callback);
+    await this._installMainMaster(callback, shared, systemd);
   }
 
   public async remove() {
@@ -100,11 +105,11 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
       '@@@@@@ START sending the image file to main master node... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerSharedInstaller.DIR}/`;
+    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerInstaller.DIR}/`;
     await scp.sendFile(
       mainMaster,
       srcPath,
-      `${IngressControllerSharedInstaller.IMAGE_HOME}/`
+      `${IngressControllerInstaller.IMAGE_HOME}/`
     );
     console.debug(
       '###### FINISH sending the image file to main master node... ######'
@@ -143,7 +148,7 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
 
   protected getImagePushScript(): string {
     let gitPullCommand = `
-    mkdir -p ~/${IngressControllerSharedInstaller.IMAGE_HOME};
+    mkdir -p ~/${IngressControllerInstaller.IMAGE_HOME};
     ${this._exportEnv()}
     cd $NGINX_INGRESS_HOME;
     `;
@@ -174,67 +179,73 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
 
   private _exportEnv() {
     return `
-    export NGINX_INGRESS_HOME=~/${IngressControllerSharedInstaller.IMAGE_HOME};
-    export INGRESS_NGINX_NAME=${IngressControllerSharedInstaller.INGRESS_NGINX_NAME};
-    export INGRESS_CLASS=${IngressControllerSharedInstaller.INGRESS_CLASS};
-    export NGINX_INGRESS_VERSION=${IngressControllerSharedInstaller.NGINX_INGRESS_VERSION};
-    export KUBE_WEBHOOK_CERTGEN_VERSION=v${IngressControllerSharedInstaller.KUBE_WEBHOOK_CERTGEN_VERSION};
+    export NGINX_INGRESS_HOME=~/${IngressControllerInstaller.IMAGE_HOME};
+    export INGRESS_NGINX_NAME=${IngressControllerInstaller.INGRESS_NGINX_NAME};
+    export INGRESS_CLASS=${IngressControllerInstaller.INGRESS_CLASS};
+    export NGINX_INGRESS_VERSION=${IngressControllerInstaller.NGINX_INGRESS_VERSION};
+    export KUBE_WEBHOOK_CERTGEN_VERSION=v${IngressControllerInstaller.KUBE_WEBHOOK_CERTGEN_VERSION};
     export REGISTRY=${this.env.registry};
     `;
   }
 
-  private async _installMainMaster(callback: any) {
+  private async _installMainMaster(
+    callback: any,
+    shared: boolean,
+    systemd: boolean
+  ) {
     console.debug(
       '@@@@@@ START installing nginx ingress controller main Master... @@@@@@'
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
 
-    // Step0. deploy yaml 수정
+    // Step 0. ingress.config 수정
     mainMaster.cmd = this._step0();
     await mainMaster.exeCmd(callback);
 
-    // Step 1. Nginx Ingress Controller 배포
-    mainMaster.cmd = this._step1();
-    await mainMaster.exeCmd(callback);
+    // Step 1. nginx ingress controller 설치
+    if (shared) {
+      mainMaster.cmd = this._shared();
+      await mainMaster.exeCmd(callback);
+    }
+    if (systemd) {
+      mainMaster.cmd = this._systemd();
+      await mainMaster.exeCmd(callback);
+    }
+
     console.debug(
       '###### FINISH installing nginx ingress controller main Master... ######'
     );
   }
 
   private _step0() {
-    // ingress-nginx 문자열 같은경우 여러번 설치하면 중복해서 sed로 치환되므로
-    // 치환 되기 전에 원래대로 만들고 치환함.
     let script = `
-    ${this._exportEnv()}
-    cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/manifest/;
+      cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest;
+      sudo sed -i 's|\\r$||g' ingress.config;
+      . ingress.config;
 
-    sed -i 's/'\${INGRESS_NGINX_NAME}'/ingress-nginx/g' shared.yaml;
-    sed -i 's/--ingress-class='\${INGRESS_CLASS}'/--ingress-class=nginx/g' shared.yaml;
-    sed -i 's/ingress-controller-leader-'\${INGRESS_CLASS}'/ingress-controller-leader-nginx/g' shared.yaml;
-    sed -i 's/'\${NGINX_INGRESS_VERSION}'/{nginx_ingress_version}/g' shared.yaml;
-    sed -i 's/'\${KUBE_WEBHOOK_CERTGEN_VERSION}'/{kube_webhook_certgen_version}/g' shared.yaml;
-
-    sed -i 's/ingress-nginx/'\${INGRESS_NGINX_NAME}'/g' shared.yaml;
-    sed -i 's/--ingress-class=nginx/--ingress-class='\${INGRESS_CLASS}'/g' shared.yaml;
-    sed -i 's/ingress-controller-leader-nginx/ingress-controller-leader-'\${INGRESS_CLASS}'/g' shared.yaml;
-    sed -i 's/{nginx_ingress_version}/'\${NGINX_INGRESS_VERSION}'/g' shared.yaml;
-    sed -i 's/{kube_webhook_certgen_version}/'\${KUBE_WEBHOOK_CERTGEN_VERSION}'/g' shared.yaml;
+      sudo sed -i "s|$NGINX_INGRESS_VERSION|${IngressControllerInstaller.NGINX_INGRESS_VERSION}|g" ./ingress.config;
+      sudo sed -i "s|$KUBE_WEBHOOK_CERTGEN_VERSION|v${IngressControllerInstaller.KUBE_WEBHOOK_CERTGEN_VERSION}|g" ./ingress.config;
     `;
 
     if (this.env.registry) {
-      script += `
-      cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/manifest/;
-      sed -i 's/quay.io\\/kubernetes-ingress-controller\\/nginx-ingress-controller/'\${REGISTRY}'\\/kubernetes-ingress-controller\\/nginx-ingress-controller/g' shared.yaml;
-      sed -i 's/docker.io\\/jettech\\/kube-webhook-certgen/'\${REGISTRY}'\\/jettech\\/kube-webhook-certgen/g' shared.yaml;
-      `;
+      script += `sudo sed -i "s|$NGINX_INGRESS_CONTROLLER_IMAGE|${this.env.registry}/$NGINX_INGRESS_CONTROLLER_IMAGE|g" ./ingress.config;`;
+      script += `sudo sed -i "s|$KUBE_WEBHOOK_CERTGEN_IMAGE|${this.env.registry}/$NGINX_INGRESS_CONTROLLER_IMAGE|g" ./ingress.config;`;
     }
+
     return script;
   }
 
-  private _step1() {
+  private _shared() {
     return `
-    cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/manifest/;
-    kubectl apply -f shared.yaml;
+    cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest/;
+    ./install-ingress.sh install_shared
+    `;
+  }
+
+  private _systemd() {
+    return `
+    cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest/;
+    ./install-ingress.sh install_system
     `;
   }
 
@@ -252,9 +263,10 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
 
   private _getRemoveScript(): string {
     return `
-    cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/manifest/;
-    kubectl delete -f shared.yaml;
-    rm -rf ~/${IngressControllerSharedInstaller.INSTALL_HOME};
+    cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest/;
+    ./install-ingress.sh uninstall_system
+    ./install-ingress.sh uninstall_shared
+    rm -rf ~/${IngressControllerInstaller.INSTALL_HOME};
 
     `;
   }
@@ -263,11 +275,11 @@ export default class IngressControllerSharedInstaller extends AbstractInstaller 
   //   console.debug('@@@@@@ START download yaml file from external... @@@@@@');
   //   const { mainMaster } = this.env.getNodesSortedByRole();
   //   mainMaster.cmd = `
-  //   mkdir -p ~/${IngressControllerSharedInstaller.INSTALL_HOME}/shared/yaml;
-  //   cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/shared/yaml;
+  //   mkdir -p ~/${IngressControllerInstaller.INSTALL_HOME}/shared/yaml;
+  //   cd ~/${IngressControllerInstaller.INSTALL_HOME}/shared/yaml;
   //   wget https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/IngressNginx/shared/yaml/shared.yaml;
-  //   mkdir -p ~/${IngressControllerSharedInstaller.INSTALL_HOME}/system/yaml;
-  //   cd ~/${IngressControllerSharedInstaller.INSTALL_HOME}/system/yaml;
+  //   mkdir -p ~/${IngressControllerInstaller.INSTALL_HOME}/system/yaml;
+  //   cd ~/${IngressControllerInstaller.INSTALL_HOME}/system/yaml;
   //   wget https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/IngressNginx/system/yaml/shared.yaml
   //   `;
   //   await mainMaster.exeCmd();

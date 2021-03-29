@@ -1,5 +1,6 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-underscore-dangle */
+import { isFunction } from 'util';
 import AbstractInstaller from './AbstractInstaller';
 import Env, { NETWORK_TYPE } from '../Env';
 import * as scp from '../../common/scp';

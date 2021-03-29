@@ -19,7 +19,7 @@ interface SendCb {
  */
 
 // SSH 연결 타임아웃 (ms)
-const CONNECTION_TIMER = 10000;
+const CONNECTION_TIMER = 30000;
 // command 실행 타임아웃 (ms)
 const COMMAND_EXE_TIMER = 900000;
 

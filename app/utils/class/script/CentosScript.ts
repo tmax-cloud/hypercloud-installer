@@ -139,19 +139,32 @@ EOF
 
     # sshpass
     sudo yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/sshpass-1.06-2.el7.x86_64.rpm;
+
+    # hyperauth 인증 키 생성 관련
+    yum install -y openssl
+    yum install -y java-1.8.0-openjdk-devel.x86_64
+    #apt install openssl
+    #apt install oracle-java8-installer
     `;
   }
 
   installLvm2(): string {
     return `
     yum install -y lvm2;
-      `;
+    `;
   }
 
   installNtp(): string {
     return `
-      yum install -y ntp;
-      `;
+    yum install -y ntp;
+    `;
+  }
+
+  installOpenSSL(): string {
+    return `
+    yum install -y openssl;
+    yum install -y java-1.8.0-openjdk-devel.x86_64;
+    `;
   }
 
   setKubernetesRepo(): string {

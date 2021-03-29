@@ -100,45 +100,45 @@ function InstallContentsHyperCloud3(props: any) {
       });
       setProgress(20);
 
-      // webhook install
-      await hyperCloudWebhookInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(40);
+      // // webhook install
+      // await hyperCloudWebhookInstaller.install({
+      //   callback,
+      //   setProgress
+      // });
+      // setProgress(40);
 
-      // console install
-      await hyperCloudConsoleInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(60);
+      // // console install
+      // await hyperCloudConsoleInstaller.install({
+      //   callback,
+      //   setProgress
+      // });
+      // setProgress(60);
 
-      // 30초 대기 console pod 정상 동작 할 때 까지
-      await new Promise(resolve => setTimeout(resolve, 30000));
+      // // 30초 대기 console pod 정상 동작 할 때 까지
+      // await new Promise(resolve => setTimeout(resolve, 30000));
 
-      // realm import
-      await hyperAuthInstaller.realmImport({
-        state,
-        callback,
-        setProgress
-      });
-      setProgress(80);
+      // // realm import
+      // await hyperAuthInstaller.realmImport({
+      //   state,
+      //   callback,
+      //   setProgress
+      // });
+      // setProgress(80);
 
-      // template service broker install
-      await templateSeviceBrokerInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(100);
+      // // template service broker install
+      // await templateSeviceBrokerInstaller.install({
+      //   callback,
+      //   setProgress
+      // });
+      // setProgress(100);
     } catch (error) {
       console.error(error);
 
-      await templateSeviceBrokerInstaller.remove();
-      await hyperCloudConsoleInstaller.remove();
-      await hyperCloudWebhookInstaller.remove();
+      // await templateSeviceBrokerInstaller.remove();
+      // await hyperCloudConsoleInstaller.remove();
+      // await hyperCloudWebhookInstaller.remove();
       await hyperCloudOperatorInstaller.remove();
-      await hyperCloudWebhookInstaller.rollbackApiServerYaml();
+      // await hyperCloudWebhookInstaller.rollbackApiServerYaml();
     } finally {
       console.log();
     }

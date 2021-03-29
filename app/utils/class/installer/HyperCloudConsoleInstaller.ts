@@ -13,11 +13,13 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${HyperCloudConsoleInstaller.INSTALL_HOME}/image`;
 
-  public static readonly CONSOLE_VERSION = `4.1.4.23`;
+  public static readonly CONSOLE_VERSION = `0.5.1.30`;
+
+  public static readonly OPERATOR_VERSION = `5.1.0.1`;
 
   public static readonly CONSOLE_NAMESPACE = `console-system`;
 
-  public static readonly HCDC_MODE = false;
+  // public static readonly HCDC_MODE = false;
 
   // singleton
   private static instance: HyperCloudConsoleInstaller;
@@ -175,151 +177,167 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing console main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
 
-    // Step 1. Namespace, ResourceQuota, ServiceAccount, ClusterRole, ClusterRoleBinding 생성
-    mainMaster.cmd = this._step1();
-    await mainMaster.exeCmd(callback);
+    mainMaster.cmd = `
+    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
 
-    // Step 2. Secret (TLS) 생성
-    mainMaster.cmd = this._step2();
-    await mainMaster.exeCmd(callback);
+    export OPERATOR_VER=${HyperCloudConsoleInstaller.OPERATOR_VERSION}
+    export CONSOLE_VER=${HyperCloudConsoleInstaller.CONSOLE_VERSION}
+    export KIALI=0.0.0.0:20001
+    export KIBANA=0.0.0.0:80
+    export REALM=tmax
+    export KEYCLOAK=hyperauth.org
+    export CLIENTID=hypercloud5
+    export MC_MODE=true
 
-    // Step 3. Service (Load Balancer) 생성
-    mainMaster.cmd = this._step3();
+    chmod +x install.sh
+    ./install.sh
+    `;
     await mainMaster.exeCmd(callback);
+    // // Step 1. Namespace, ResourceQuota, ServiceAccount, ClusterRole, ClusterRoleBinding 생성
+    // mainMaster.cmd = this._step1();
+    // await mainMaster.exeCmd(callback);
 
-    // Step 4. Deployment (with Pod Template) 생성
-    mainMaster.cmd = this._step4();
-    await mainMaster.exeCmd(callback);
+    // // Step 2. Secret (TLS) 생성
+    // mainMaster.cmd = this._step2();
+    // await mainMaster.exeCmd(callback);
 
-    // Step 5. 동작 확인
-    mainMaster.cmd = this._step5();
-    await mainMaster.exeCmd(callback);
+    // // Step 3. Service (Load Balancer) 생성
+    // mainMaster.cmd = this._step3();
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 4. Deployment (with Pod Template) 생성
+    // mainMaster.cmd = this._step4();@@NAME_NS@@
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 5. 동작 확인
+    // mainMaster.cmd = this._step5();
+    // await mainMaster.exeCmd(callback);
 
     console.debug('###### Finish installing console main Master... ######');
   }
 
-  private _step1() {
-    return `
-    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
-    sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 1.initialization.yaml;
-    kubectl create -f 1.initialization.yaml;
-    `;
-  }
+  // private _step1() {
+  //   return `
+  //   cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
+  //   sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 1.initialization.yaml;
+  //   kubectl create -f 1.initialization.yaml;
+  //   `;
+  // }
 
-  private _step2() {
-    // FIXME: 현재 발급받은 인증서가 없는 경우만 고려됨
-    return `
-    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
-    mkdir -p tls;
-    cd tls;
-    openssl genrsa -out tls.key 2048;
-    openssl req -new -key tls.key -subj "/C=KR/ST=Seoul/L=Seoul/O=tmax" -out tls.csr;
-    openssl x509 -req -days 3650 -in tls.csr -signkey tls.key -out tls.crt;
-    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
-    kubectl create secret tls console-https-secret --cert=./tls/tls.crt --key=./tls/tls.key -n ${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE};
-    `;
-  }
+  // private _step2() {
+  //   // FIXME: 현재 발급받은 인증서가 없는 경우만 고려됨
+  //   return `
+  //   cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
+  //   mkdir -p tls;
+  //   cd tls;
+  //   openssl genrsa -out tls.key 2048;
+  //   openssl req -new -key tls.key -subj "/C=KR/ST=Seoul/L=Seoul/O=tmax" -out tls.csr;
+  //   openssl x509 -req -days 3650 -in tls.csr -signkey tls.key -out tls.crt;
+  //   cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
+  //   kubectl create secret tls console-https-secret --cert=./tls/tls.crt --key=./tls/tls.key -n ${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE};
+  //   `;
+  // }
 
-  private _step3() {
-    return `
-    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
-    sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 2.svc-lb.yaml;
-    kubectl create -f 2.svc-lb.yaml;
-    `;
-  }
+  // private _step3() {
+  //   return `
+  //   cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
+  //   sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 2.svc-lb.yaml;
+  //   kubectl create -f 2.svc-lb.yaml;
+  //   `;
+  // }
 
-  private _step4() {
-    let script = `
-    cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
-    sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 3.deployment.yaml;
+  // private _step4() {
+  //   let script = `
+  //   cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME}/manifest;
+  //   sed -i 's/@@NAME_NS@@/${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE}/g' 3.deployment.yaml;
 
-    export HYPERCLOUD_OPERATOR_CLUSTER_IP=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-operator-service")].spec.clusterIP}'\`;
-    export HYPERCLOUD_OPERATOR_CLUSTER_IP=\${HYPERCLOUD_OPERATOR_CLUSTER_IP:-0.0.0.0}
-    export HYPERCLOUD_OPERATOR_PORT=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-operator-service")].spec.ports[0].port}'\`;
-    export HYPERCLOUD_OPERATOR_PORT=\${HYPERCLOUD_OPERATOR_PORT:-28677}
-    sed -i 's/@@HC4@@/'\${HYPERCLOUD_OPERATOR_CLUSTER_IP}':'\${HYPERCLOUD_OPERATOR_PORT}'/g' 3.deployment.yaml;
+  //   export HYPERCLOUD_OPERATOR_CLUSTER_IP=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-operator-service")].spec.clusterIP}'\`;
+  //   export HYPERCLOUD_OPERATOR_CLUSTER_IP=\${HYPERCLOUD_OPERATOR_CLUSTER_IP:-0.0.0.0}
+  //   export HYPERCLOUD_OPERATOR_PORT=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-operator-service")].spec.ports[0].port}'\`;
+  //   export HYPERCLOUD_OPERATOR_PORT=\${HYPERCLOUD_OPERATOR_PORT:-28677}
+  //   sed -i 's/@@HC4@@/'\${HYPERCLOUD_OPERATOR_CLUSTER_IP}':'\${HYPERCLOUD_OPERATOR_PORT}'/g' 3.deployment.yaml;
 
-    export PROMETHEUS_CLUSTER_IP=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="prometheus-k8s")].spec.clusterIP}'\`
-    export PROMETHEUS_CLUSTER_IP=\${PROMETHEUS_CLUSTER_IP:-0.0.0.0}
-    export PROMETHEUS_PORT=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="prometheus-k8s")].spec.ports[0].port}'\`
-    export PROMETHEUS_PORT=\${PROMETHEUS_PORT:-9090}
-    sed -i 's/@@PROM@@/'\${PROMETHEUS_CLUSTER_IP}':'\${PROMETHEUS_PORT}'/g' 3.deployment.yaml;
+  //   export PROMETHEUS_CLUSTER_IP=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="prometheus-k8s")].spec.clusterIP}'\`
+  //   export PROMETHEUS_CLUSTER_IP=\${PROMETHEUS_CLUSTER_IP:-0.0.0.0}
+  //   export PROMETHEUS_PORT=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="prometheus-k8s")].spec.ports[0].port}'\`
+  //   export PROMETHEUS_PORT=\${PROMETHEUS_PORT:-9090}
+  //   sed -i 's/@@PROM@@/'\${PROMETHEUS_CLUSTER_IP}':'\${PROMETHEUS_PORT}'/g' 3.deployment.yaml;
 
-    export GRAFANA_CLUSTER_IP=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="grafana")].spec.clusterIP}'\`
-    export GRAFANA_CLUSTER_IP=\${GRAFANA_CLUSTER_IP:-0.0.0.0}
-    export GRAFANA_PORT=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="grafana")].spec.ports[0].port}'\`
-    export GRAFANA_PORT=\${GRAFANA_PORT:-3000}
-    sed -i 's/@@GRAFANA@@/'\${GRAFANA_CLUSTER_IP}':'\${GRAFANA_PORT}'/g' 3.deployment.yaml;
+  //   export GRAFANA_CLUSTER_IP=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="grafana")].spec.clusterIP}'\`
+  //   export GRAFANA_CLUSTER_IP=\${GRAFANA_CLUSTER_IP:-0.0.0.0}
+  //   export GRAFANA_PORT=\`kubectl get svc -n monitoring -o jsonpath='{.items[?(@.metadata.name=="grafana")].spec.ports[0].port}'\`
+  //   export GRAFANA_PORT=\${GRAFANA_PORT:-3000}
+  //   sed -i 's/@@GRAFANA@@/'\${GRAFANA_CLUSTER_IP}':'\${GRAFANA_PORT}'/g' 3.deployment.yaml;
 
-    sed -i 's/@@KIALI@@/0.0.0.0:20001/g' 3.deployment.yaml;
-    sed -i 's/@@JAEGER@@/0.0.0.0:80/g' 3.deployment.yaml;
-    sed -i 's/@@APPROVAL@@/0.0.0.0:80/g' 3.deployment.yaml;
-    sed -i 's/@@KUBEFLOW@@/0.0.0.0:80/g' 3.deployment.yaml;
+  //   sed -i 's/@@KIALI@@/0.0.0.0:20001/g' 3.deployment.yaml;
+  //   sed -i 's/@@JAEGER@@/0.0.0.0:80/g' 3.deployment.yaml;
+  //   sed -i 's/@@APPROVAL@@/0.0.0.0:80/g' 3.deployment.yaml;
+  //   sed -i 's/@@KUBEFLOW@@/0.0.0.0:80/g' 3.deployment.yaml;
 
-    export WEBHOOK_CLUSTER_IP=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-webhook-svc")].spec.clusterIP}'\`
-    export WEBHOOK_CLUSTER_IP=\${WEBHOOK_CLUSTER_IP:-0.0.0.0}
-    export WEBHOOK_PORT=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-webhook-svc")].spec.ports[0].port}'\`
-    export WEBHOOK_PORT=\${WEBHOOK_PORT:-80}
-    sed -i 's/@@WEBHOOK@@/'\${WEBHOOK_CLUSTER_IP}':'\${WEBHOOK_PORT}'/g' 3.deployment.yaml;
+  //   export WEBHOOK_CLUSTER_IP=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-webhook-svc")].spec.clusterIP}'\`
+  //   export WEBHOOK_CLUSTER_IP=\${WEBHOOK_CLUSTER_IP:-0.0.0.0}
+  //   export WEBHOOK_PORT=\`kubectl get svc -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-webhook-svc")].spec.ports[0].port}'\`
+  //   export WEBHOOK_PORT=\${WEBHOOK_PORT:-80}
+  //   sed -i 's/@@WEBHOOK@@/'\${WEBHOOK_CLUSTER_IP}':'\${WEBHOOK_PORT}'/g' 3.deployment.yaml;
 
-    sed -i 's/@@VNC@@/0.0.0.0:80/g' 3.deployment.yaml;
+  //   sed -i 's/@@VNC@@/0.0.0.0:80/g' 3.deployment.yaml;
 
-    export HYPERAUTH_CLUSTER_IP=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].spec.clusterIP}'\`
-    export HYPERAUTH_CLUSTER_IP=\${HYPERAUTH_CLUSTER_IP:-0.0.0.0}
-    export HYPERAUTH_PORT=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].spec.ports[0].port}'\`
-    export HYPERAUTH_PORT=\${HYPERAUTH_PORT:-80}
-    sed -i 's/@@HYPERAUTH@@/'\${HYPERAUTH_CLUSTER_IP}':'\${HYPERAUTH_PORT}'/g' 3.deployment.yaml;
+  //   export HYPERAUTH_CLUSTER_IP=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].spec.clusterIP}'\`
+  //   export HYPERAUTH_CLUSTER_IP=\${HYPERAUTH_CLUSTER_IP:-0.0.0.0}
+  //   export HYPERAUTH_PORT=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].spec.ports[0].port}'\`
+  //   export HYPERAUTH_PORT=\${HYPERAUTH_PORT:-80}
+  //   sed -i 's/@@HYPERAUTH@@/'\${HYPERAUTH_CLUSTER_IP}':'\${HYPERAUTH_PORT}'/g' 3.deployment.yaml;
 
-    sed -i 's/@@REALM@@/tmax/g' 3.deployment.yaml;
+  //   sed -i 's/@@REALM@@/tmax/g' 3.deployment.yaml;
 
-    export HYPERAUTH_EXTERNAL_IP=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].status.loadBalancer.ingress[0].ip}'\`
-    export HYPERAUTH_EXTERNAL_IP=\${HYPERAUTH_EXTERNAL_IP:-0.0.0.0}
-    sed -i 's/@@KEYCLOAK@@/'\${HYPERAUTH_EXTERNAL_IP}'/g' 3.deployment.yaml;
+  //   export HYPERAUTH_EXTERNAL_IP=\`kubectl get svc -n hyperauth -o jsonpath='{.items[?(@.metadata.name=="hyperauth")].status.loadBalancer.ingress[0].ip}'\`
+  //   export HYPERAUTH_EXTERNAL_IP=\${HYPERAUTH_EXTERNAL_IP:-0.0.0.0}
+  //   sed -i 's/@@KEYCLOAK@@/'\${HYPERAUTH_EXTERNAL_IP}'/g' 3.deployment.yaml;
 
-    sed -i 's/@@CLIENTID@@/hypercloud4/g' 3.deployment.yaml;
-    `;
+  //   sed -i 's/@@CLIENTID@@/hypercloud4/g' 3.deployment.yaml;
+  //   `;
 
-    if (HyperCloudConsoleInstaller.HCDC_MODE) {
-      script += `
-      sed -i 's/@@HDC_FLAG@@/true/g' 3.deployment.yaml;
-      # sed -i 's/@@PORTAL@@/???/g' 3.deployment.yaml;
-      `;
-    } else {
-      script += `
-      sed -i 's/- --hdc-mode=@@HDC_FLAG@@//g' 3.deployment.yaml;
-      sed -i 's/- --tmaxcloud-portal=@@PORTAL@@//g' 3.deployment.yaml;
-      `;
-    }
+  //   if (HyperCloudConsoleInstaller.HCDC_MODE) {
+  //     script += `
+  //     sed -i 's/@@HDC_FLAG@@/true/g' 3.deployment.yaml;
+  //     # sed -i 's/@@PORTAL@@/???/g' 3.deployment.yaml;
+  //     `;
+  //   } else {
+  //     script += `
+  //     sed -i 's/- --hdc-mode=@@HDC_FLAG@@//g' 3.deployment.yaml;
+  //     sed -i 's/- --tmaxcloud-portal=@@PORTAL@@//g' 3.deployment.yaml;
+  //     `;
+  //   }
 
-    script += `
-    sed -i 's/@@VER@@/${HyperCloudConsoleInstaller.CONSOLE_VERSION}/g' 3.deployment.yaml;
-    `;
+  //   script += `
+  //   sed -i 's/@@VER@@/${HyperCloudConsoleInstaller.CONSOLE_VERSION}/g' 3.deployment.yaml;
+  //   `;
 
-    if (this.env.registry) {
-      script += `
-      sed -i 's| tmaxcloudck| ${this.env.registry}/tmaxcloudck|g' 3.deployment.yaml;
-      `;
-    }
+  //   if (this.env.registry) {
+  //     script += `
+  //     sed -i 's| tmaxcloudck| ${this.env.registry}/tmaxcloudck|g' 3.deployment.yaml;
+  //     `;
+  //   }
 
-    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
-    if (process.env.RESOURCE === 'low') {
-      script += `
-      sed -i "s/memory: '2Gi'/memory: '1Gi'/g" 3.deployment.yaml;
-      sed -i "s/cpu: '1'/cpu: '0.5'/g" 3.deployment.yaml;
-      `;
-    }
+  //   // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
+  //   if (process.env.RESOURCE === 'low') {
+  //     script += `
+  //     sed -i "s/memory: '2Gi'/memory: '1Gi'/g" 3.deployment.yaml;
+  //     sed -i "s/cpu: '1'/cpu: '0.5'/g" 3.deployment.yaml;
+  //     `;
+  //   }
 
-    script += `
-    kubectl create -f 3.deployment.yaml;
-    `;
+  //   script += `
+  //   kubectl create -f 3.deployment.yaml;
+  //   `;
 
-    return script;
-  }
+  //   return script;
+  // }
 
-  private _step5() {
-    return `
-    `;
-  }
+  // private _step5() {
+  //   return `
+  //   `;
+  // }
 
   private async _removeMainMaster() {
     console.debug('@@@@@@ Start remove console main Master... @@@@@@');
@@ -332,11 +350,12 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     return `
     cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
+    kubectl delete -f ./deployments
     # kubectl delete -f 3.deployment.yaml;
     # kubectl delete -f 2.svc-lb.yaml;
     # kubectl delete secret console-https-secret -n ${HyperCloudConsoleInstaller.CONSOLE_NAMESPACE};
     # kubectl delete -f 1.initialization.yaml;
-    kubectl delete -f ./manifest
+    # kubectl delete -f ./manifest
     rm -rf ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
     `;
   }
