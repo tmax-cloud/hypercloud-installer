@@ -156,7 +156,11 @@ export default abstract class AbstractScript {
 
   abstract installPackage(): string;
 
+  abstract installLvm2(): string;
+
   abstract installNtp(): string;
+
+  abstract installOpenSSL(): string;
 
   abstract setKubernetesRepo(): string;
 

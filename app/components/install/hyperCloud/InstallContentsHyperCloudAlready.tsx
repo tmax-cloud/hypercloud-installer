@@ -54,14 +54,14 @@ function InstallContentsHyperCloudAlready(props: any) {
     console.debug(`nowEnv`, nowEnv);
 
     // console delete
-    const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
-    hyperCloudConsoleInstaller.env = nowEnv;
-    await hyperCloudConsoleInstaller.remove();
+    // const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
+    // hyperCloudConsoleInstaller.env = nowEnv;
+    // await hyperCloudConsoleInstaller.remove();
 
     // webhook delete
-    const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;
-    hyperCloudWebhookInstaller.env = nowEnv;
-    await hyperCloudWebhookInstaller.remove();
+    // const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;
+    // hyperCloudWebhookInstaller.env = nowEnv;
+    // await hyperCloudWebhookInstaller.remove();
 
     // operator delete
     const hyperCloudOperatorInstaller = HyperCloudOperatorInstaller.getInstance;
@@ -69,15 +69,15 @@ function InstallContentsHyperCloudAlready(props: any) {
     await hyperCloudOperatorInstaller.remove();
 
     // template service broker delete
-    const templateSeviceBrokerInstaller =
-      TemplateSeviceBrokerInstaller.getInstance;
-    templateSeviceBrokerInstaller.env = nowEnv;
-    await templateSeviceBrokerInstaller.remove();
+    // const templateSeviceBrokerInstaller =
+    //   TemplateSeviceBrokerInstaller.getInstance;
+    // templateSeviceBrokerInstaller.env = nowEnv;
+    // await templateSeviceBrokerInstaller.remove();
 
     // webhook delete
     // kube-apiserver.yaml 수정부분은 맨 마지막에 수행
     // api server재기동에 시간이 걸려서, 다음 명령에서 kubectl이 동작하지 않음
-    await hyperCloudWebhookInstaller.rollbackApiServerYaml();
+    // await hyperCloudWebhookInstaller.rollbackApiServerYaml();
   };
 
   const getNetworkJsx = state => {
