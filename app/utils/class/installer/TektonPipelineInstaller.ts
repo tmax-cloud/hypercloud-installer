@@ -56,7 +56,8 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
       // TODO: sendYaml();
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
       // external network 경우 해주어야 할 작업들
-      await this._downloadYaml();
+      // await this._downloadYaml();
+      await this.cloneGitFile(callback);
     }
 
     if (this.env.registry) {
@@ -225,24 +226,57 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing pipeline main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
 
-    // Step 1. Pipelines 설치
+    // Step0. cicd.config 설정
+    mainMaster.cmd = this._step0();
+    await mainMaster.exeCmd(callback);
+
+    // Step1. install
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
     console.debug('###### Finish installing pipeline main Master... ######');
   }
 
-  private _step1() {
+  private _step0() {
+    let script = `
+    cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
+    sudo sed -i 's|\\r$||g' cicd.config;
+    . cicd.config;
+  `;
+
     if (this.env.registry) {
-      return `
-      cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-      kubectl apply -f updated.yaml;
-      `;
+      script += `sudo sed -i "s|$imageRegistry|${this.env.registry}|g" . cicd.config;`;
+    } else {
+      script += `sudo sed -i "s|$imageRegistry||g" . cicd.config;`;
     }
-    return `
-    cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    kubectl apply -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml;
+
+    return script;
+  }
+
+  private _step1() {
+    // if (this.env.registry) {
+    //   return `
+    //   cd ~/${TektonPipelineInstaller.INSTALL_HOME};
+    //   kubectl apply -f updated.yaml;
+    //   `;
+    // }
+    // return `
+    // cd ~/${TektonPipelineInstaller.INSTALL_HOME};
+    // kubectl apply -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml;
+    // `;
+    let script = `
+    cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
     `;
+
+    if (this.env.registry) {
+      script += `./installer.sh prepare-offline;`;
+    } else {
+      script += `./installer.sh prepare-online;`;
+    }
+
+    script += `./installer.sh install;`;
+
+    return script;
   }
 
   private async _removeMainMaster() {
@@ -254,16 +288,21 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
   }
 
   private _getRemoveScript(): string {
-    if (this.env.registry) {
-      return `
-      cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-      kubectl delete -f updated.yaml;
-      rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
-      `;
-    }
+    // if (this.env.registry) {
+    //   return `
+    //   cd ~/${TektonPipelineInstaller.INSTALL_HOME};
+    //   kubectl delete -f updated.yaml;
+    //   rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
+    //   `;
+    // }
+    // return `
+    // cd ~/${TektonPipelineInstaller.INSTALL_HOME};
+    // kubectl delete -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml
+    // `;
     return `
-    cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    kubectl delete -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml
+      cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
+      ./installer.sh uninstall;
+      rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
     `;
   }
 
