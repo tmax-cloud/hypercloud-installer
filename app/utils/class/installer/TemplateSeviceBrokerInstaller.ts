@@ -13,7 +13,17 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${TemplateSeviceBrokerInstaller.INSTALL_HOME}/image`;
 
-  public static readonly VERSION = `4.0.0.6`;
+  public static readonly TEMPLATE_VERSION = `0.0.5`;
+
+  public static readonly TEMPLATE_NAMESPACE = `template`;
+
+  public static readonly CLUSTER_TSB_VERSION = `0.0.5`;
+
+  public static readonly CLUSTER_TSB_NAMESPACE = `cluster-tsb-ns`;
+
+  public static readonly TSB_VERSION = `0.0.5`;
+
+  public static readonly TSB_NAMESPACE = `tsb-ns`;
 
   // singleton
   private static instance: TemplateSeviceBrokerInstaller;
@@ -121,7 +131,7 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     const { mainMaster } = this.env.getNodesSortedByRole();
     const script = ScriptFactory.createScript(mainMaster.os.type);
     // FIXME: tsb git branch명 통일되지 않음
-    mainMaster.cmd = script.cloneGitFile(CONST.TSB_REPO, 'tsb-4.1');
+    mainMaster.cmd = script.cloneGitFile(CONST.TSB_REPO, 'tsb-5.0');
     await mainMaster.exeCmd(callback);
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
@@ -173,23 +183,47 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     );
     const { mainMaster } = this.env.getNodesSortedByRole();
 
-    // Step 1. TemplateServiceBroker Namespace 및 ServiceAccount 생성
+    // // Step 1. TemplateServiceBroker Namespace 및 ServiceAccount 생성
+    // mainMaster.cmd = this._step1();
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 2. Role 및 RoleBinding 생성
+    // mainMaster.cmd = this._step2();
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 3. TemplateServiceBroker Server 생성
+    // mainMaster.cmd = this._step3();
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 4. TemplateServiceBroker Service 생성
+    // mainMaster.cmd = this._step4();
+    // await mainMaster.exeCmd(callback);
+
+    // // Step 5. TemplateServiceBroker 등록
+    // mainMaster.cmd = this._step5();
+    // await mainMaster.exeCmd(callback);
+
+    // Step0. tsb.config 설정
+    mainMaster.cmd = this._step0();
+    await mainMaster.exeCmd(callback);
+
+    // Step1. install-template
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
-    // Step 2. Role 및 RoleBinding 생성
+    // Step2. install-cluster-tsb
     mainMaster.cmd = this._step2();
     await mainMaster.exeCmd(callback);
 
-    // Step 3. TemplateServiceBroker Server 생성
+    // Step3. install-tsb
     mainMaster.cmd = this._step3();
     await mainMaster.exeCmd(callback);
 
-    // Step 4. TemplateServiceBroker Service 생성
+    // Step4. register-cluster-tsb
     mainMaster.cmd = this._step4();
     await mainMaster.exeCmd(callback);
 
-    // Step 5. TemplateServiceBroker 등록
+    // Step5. register-tsb
     mainMaster.cmd = this._step5();
     await mainMaster.exeCmd(callback);
 
@@ -198,55 +232,96 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     );
   }
 
+  private _step0() {
+    let script = `
+    cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    sudo sed -i 's|\\r$||g' tsb.config;
+    . tsb.config;
+
+    sudo sed -i "s|$templateVersion|${TemplateSeviceBrokerInstaller.TEMPLATE_VERSION}|g" ./tsb.config;
+    sudo sed -i "s|$templateNamespace|${TemplateSeviceBrokerInstaller.TSB_NAMESPACE}|g" ./tsb.config;
+    sudo sed -i "s|$clusterTsbVersion|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_VERSION}|g" ./tsb.config;
+    sudo sed -i "s|$clusterTsbNamespace|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_NAMESPACE}|g" ./tsb.config;
+    sudo sed -i "s|$tsbVersion|${TemplateSeviceBrokerInstaller.TSB_VERSION}|g" ./tsb.config;
+    sudo sed -i "s|$tsbNamespace|${TemplateSeviceBrokerInstaller.TSB_NAMESPACE}|g" ./tsb.config;
+  `;
+
+    if (this.env.registry) {
+      script += `sudo sed -i "s|$imageRegistry|${this.env.registry}|g" ./tsb.config;`;
+    }
+
+    return script;
+  }
+
   private _step1() {
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // kubectl create namespace tsb-ns;
+    // kubectl apply -f tsb_serviceaccount.yaml;
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    kubectl create namespace tsb-ns;
-    kubectl apply -f tsb_serviceaccount.yaml;
+    sudo ./install-tsb.sh install-template;
     `;
   }
 
   private _step2() {
     // FIXME: USER_ID를 hypercloud4-system 서비스 어카운트로 설정함. 변경해야 할수도 있음
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // export USER_ID=\`kubectl get sa -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-admin")].metadata.name}'\`;
+    // sed -i 's|\${USER_ID}|'\${USER_ID}'|g' tsb_rolebinding.yaml
+    // sed -i 's|\${USER_ID}|'\${USER_ID}'|g' tsb_cluster_rolebinding.yaml;
+    // kubectl apply -f tsb_role.yaml;
+    // kubectl apply -f tsb_cluster_role.yaml;
+    // kubectl apply -f tsb_rolebinding.yaml;
+    // kubectl apply -f tsb_cluster_rolebinding.yaml;
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    export USER_ID=\`kubectl get sa -n hypercloud4-system -o jsonpath='{.items[?(@.metadata.name=="hypercloud4-admin")].metadata.name}'\`;
-    sed -i 's|\${USER_ID}|'\${USER_ID}'|g' tsb_rolebinding.yaml
-    sed -i 's|\${USER_ID}|'\${USER_ID}'|g' tsb_cluster_rolebinding.yaml;
-    kubectl apply -f tsb_role.yaml;
-    kubectl apply -f tsb_cluster_role.yaml;
-    kubectl apply -f tsb_rolebinding.yaml;
-    kubectl apply -f tsb_cluster_rolebinding.yaml;
+    sudo ./install-tsb.sh install-cluster-tsb;
     `;
   }
 
   private _step3() {
-    let script = ``;
-    if (this.env.registry) {
-      script += `
-      sed -i 's| tmaxcloudck| '${this.env.registry}'|g' tsb_deployment.yaml;
-      `;
-    }
+    // let script = ``;
+    // if (this.env.registry) {
+    //   script += `
+    //   sed -i 's| tmaxcloudck| '${this.env.registry}'|g' tsb_deployment.yaml;
+    //   `;
+    // }
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // ${script}
+    // kubectl apply -f tsb_deployment.yaml;
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    ${script}
-    kubectl apply -f tsb_deployment.yaml;
+    sudo ./install-tsb.sh install-tsb;
     `;
   }
 
   private _step4() {
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // kubectl apply -f tsb_service.yaml
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    kubectl apply -f tsb_service.yaml
+    sudo ./install-tsb.sh register-cluster-tsb;
     `;
   }
 
   private _step5() {
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // export SERVICE_BROKER_EXTERNAL_IP=\`kubectl get svc -n tsb-ns -o jsonpath='{.items[?(@.metadata.name=="template-service-broker-service")].status.loadBalancer.ingress[0].ip}'\`;
+    // sed -i 's/{SERVER_IP}/'\${SERVICE_BROKER_EXTERNAL_IP}'/g' tsb_service_broker.yaml;
+    // kubectl apply -f tsb_service_broker.yaml;
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    export SERVICE_BROKER_EXTERNAL_IP=\`kubectl get svc -n tsb-ns -o jsonpath='{.items[?(@.metadata.name=="template-service-broker-service")].status.loadBalancer.ingress[0].ip}'\`;
-    sed -i 's/{SERVER_IP}/'\${SERVICE_BROKER_EXTERNAL_IP}'/g' tsb_service_broker.yaml;
-    kubectl apply -f tsb_service_broker.yaml;
+    sudo ./install-tsb.sh register-tsb;
     `;
   }
 
@@ -260,19 +335,28 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
 
   private _getRemoveScript(): string {
     // 설치 역순
+    // return `
+    // cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
+    // kubectl delete -f tsb_service_broker.yaml;
+    // kubectl delete -f tsb_service.yaml
+    // kubectl delete -f tsb_deployment.yaml;
+
+    // kubectl delete -f tsb_cluster_rolebinding.yaml;
+    // kubectl delete -f tsb_rolebinding.yaml;
+    // kubectl delete -f tsb_cluster_role.yaml;
+    // kubectl delete -f tsb_role.yaml;
+
+    // kubectl delete -f tsb_serviceaccount.yaml;
+    // kubectl delete namespace tsb-ns;
+    // rm -rf ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME};
+    // `;
     return `
     cd ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f tsb_service_broker.yaml;
-    kubectl delete -f tsb_service.yaml
-    kubectl delete -f tsb_deployment.yaml;
-
-    kubectl delete -f tsb_cluster_rolebinding.yaml;
-    kubectl delete -f tsb_rolebinding.yaml;
-    kubectl delete -f tsb_cluster_role.yaml;
-    kubectl delete -f tsb_role.yaml;
-
-    kubectl delete -f tsb_serviceaccount.yaml;
-    kubectl delete namespace tsb-ns;
+    sudo ./install-tsb.sh uninstall-template;
+    sudo ./install-tsb.sh uninstall-cluster-tsb;
+    sudo ./install-tsb.sh uninstall-tsb;
+    sudo ./install-tsb.sh unregister-cluster-tsb;
+    sudo ./install-tsb.sh unregister-tsb;
     rm -rf ~/${TemplateSeviceBrokerInstaller.INSTALL_HOME};
     `;
   }
