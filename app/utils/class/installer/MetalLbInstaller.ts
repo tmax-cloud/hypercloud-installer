@@ -17,6 +17,8 @@ export default class MetalLbInstaller extends AbstractInstaller {
 
   public static readonly METALLB_VERSION = `0.9.3`;
 
+  public static readonly METALLB_NAMESPACE = `metallb-system`;
+
   // singleton
   private static instance: MetalLbInstaller;
 
@@ -191,9 +193,57 @@ export default class MetalLbInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
     // await this.setYaml(mainMaster, data);
-    mainMaster.cmd = this._getInstallScript(data);
+    // mainMaster.cmd = this._getInstallScript(data);
+    // await mainMaster.exeCmd(callback);
+
+    // Step0. metallb.config 설정
+    mainMaster.cmd = this._step0();
     await mainMaster.exeCmd(callback);
+
+    // Step 1. metallb 설치
+    mainMaster.cmd = this._step1();
+    await mainMaster.exeCmd(callback);
+
+    // Step 2. metallb 대역 설정
+    mainMaster.cmd = this._step2(data);
+    await mainMaster.exeCmd(callback);
+
     console.debug('###### Finish installing main Master... ######');
+  }
+
+  private _step0(): string {
+    // XXX: sed 부분 주석 처리, config 파일에 적힌 내용 sed하지 않음
+    let script = `
+      cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+      sudo sed -i 's|\\r$||g' metallb.config;
+      . metallb.config;
+
+      # sudo sed -i "s|$metallb_version|v${MetalLbInstaller.METALLB_VERSION}|g" ./metallb.config;
+      # sudo sed -i "s|$metallb_namespace|v${MetalLbInstaller.METALLB_NAMESPACE}|g" ./metallb.config;
+    `;
+
+    // FIXME: config파일에 registry 값이 없어서, $registry로 sed가 안됨
+    if (this.env.registry) {
+      script += `sudo sed -i "s|registry=|registry=${this.env.registry}|g" ./metallb.config;`;
+    }
+
+    return script;
+  }
+
+  private _step1(): string {
+    return `
+      cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+      ./install-metallb.sh install
+    `;
+  }
+
+  private _step2(data: Array<string>): string {
+    // FIXME: 현재 metallb_cidr 파일 직접 변경하나, 스크립트에서 지원되어야 함
+    return `
+    cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+    ${this._setMetalLbArea(data)}
+    kubectl apply -f yaml/metallb_cidr.yaml;
+    `;
   }
 
   private async _removeMainMaster() {
@@ -213,28 +263,33 @@ export default class MetalLbInstaller extends AbstractInstaller {
   //   console.error(metallbCidrYamlObj);
   // }
 
-  private _getInstallScript(data: Array<string>) {
-    return `
-      cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-      sed -i 's/v0.9.3/'v${MetalLbInstaller.METALLB_VERSION}'/g' metallb_v${
-      MetalLbInstaller.METALLB_VERSION
-    }.yaml;
-      ${this._setMetalLbArea(data)}
-      kubectl apply -f metallb_namespace_v${
-        MetalLbInstaller.METALLB_VERSION
-      }.yaml;
-      kubectl apply -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-      kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-      kubectl apply -f metallb_cidr.yaml;
-      `;
-  }
+  // private _getInstallScript(data: Array<string>) {
+  //   return `
+  //     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+  //     sed -i 's/v0.9.3/'v${MetalLbInstaller.METALLB_VERSION}'/g' metallb_v${
+  //     MetalLbInstaller.METALLB_VERSION
+  //   }.yaml;
+  //     ${this._setMetalLbArea(data)}
+  //     kubectl apply -f metallb_namespace_v${
+  //       MetalLbInstaller.METALLB_VERSION
+  //     }.yaml;
+  //     kubectl apply -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+  //     kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
+  //     kubectl apply -f metallb_cidr.yaml;
+  //     `;
+  // }
 
   private _getRemoveScript(): string {
+    // return `
+    // cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+    // kubectl delete -f metallb_cidr.yaml;
+    // kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+    // kubectl delete -f metallb_namespace_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+    // rm -rf ~/${MetalLbInstaller.INSTALL_HOME};
+    // `;
     return `
     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f metallb_cidr.yaml;
-    kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-    kubectl delete -f metallb_namespace_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+    ./install-metallb.sh uninstall;
     rm -rf ~/${MetalLbInstaller.INSTALL_HOME};
     `;
   }
@@ -252,8 +307,8 @@ export default class MetalLbInstaller extends AbstractInstaller {
     # network=\`ipcalc -n \${inet} | cut -d"=" -f2\`;
     # prefix=\`ipcalc -p \${inet} | cut -d"=" -f2\`;
     # networkArea=\${network}/\${prefix};
-    sed -i 's|          - \${ADDRESS-POOL}|${ipRangeText}|g' metallb_cidr.yaml;
-    sed -i 's|\\r$||g' metallb_cidr.yaml;
+    sed -i 's|          - \${ADDRESS-POOL}|${ipRangeText}|g' yaml/metallb_cidr.yaml;
+    sed -i 's|\\r$||g' yaml/metallb_cidr.yaml;
     `;
   }
 
