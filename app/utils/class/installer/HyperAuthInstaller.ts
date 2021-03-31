@@ -17,9 +17,23 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${HyperAuthInstaller.INSTALL_HOME}/image`;
 
-  public static readonly POSTGRES_VERSION = `9.6.2-alpine`;
+  public static readonly POSTGRES_VERSION = '9.6.2-alpine';
 
-  public static readonly HYPERAUTH_VERSION = `1.0.14.41`;
+  public static readonly HYPERAUTH_SERVER_VERSION = 'latest';
+
+  public static readonly KAFKA_VERSION = '2.12-2.0.1';
+
+  public static readonly ZOOKEEPER_VERSION = '3.4.6';
+
+  public static readonly HYPERAUTH_LOG_COLLECTOR_VERSION = 'b0.0.0.14';
+
+  // public static readonly MAIN_MASTER_IP = '192.168.6.171';
+
+  // public static readonly MASTER_NODE_ROOT_PASSWORD = 'tmax@23';
+
+  // public static readonly MASTER_NODE_ROOT_USER = 'root';
+
+  // public static readonly REGISTRY = '192.168.6.171:5000';
 
   // singleton
   private static instance: HyperAuthInstaller;
@@ -155,30 +169,30 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     mkdir -p ~/${HyperAuthInstaller.IMAGE_HOME};
     export HYPERAUTH_HOME=~/${HyperAuthInstaller.IMAGE_HOME};
     export POSTGRES_VERSION=${HyperAuthInstaller.POSTGRES_VERSION};
-    export HYPERAUTH_VERSION=${HyperAuthInstaller.HYPERAUTH_VERSION};
+    export HYPERAUTH_SERVER_VERSION=${HyperAuthInstaller.HYPERAUTH_SERVER_VERSION};
     export REGISTRY=${this.env.registry};
     cd $HYPERAUTH_HOME;
     `;
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       gitPullCommand += `
       sudo docker load < postgres_\${POSTGRES_VERSION}.tar;
-      sudo docker load < hyperauth_b\${HYPERAUTH_VERSION}.tar;
-      # sudo docker save tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION} > hyperauth_b\${HYPERAUTH_VERSION}.tar;
+      sudo docker load < hyperauth_b\${HYPERAUTH_SERVER_VERSION}.tar;
+      # sudo docker save tmaxcloudck/hyperauth:b\${HYPERAUTH_SERVER_VERSION} > hyperauth_b\${HYPERAUTH_SERVER_VERSION}.tar;
       # sudo docker save postgres:\${POSTGRES_VERSION} > postgres_\${POSTGRES_VERSION}.tar;
       `;
     } else {
       gitPullCommand += `
       sudo docker pull postgres:\${POSTGRES_VERSION};
-      sudo docker pull tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+      sudo docker pull tmaxcloudck/hyperauth:b\${HYPERAUTH_SERVER_VERSION};
       `;
     }
     return `
       ${gitPullCommand}
       sudo docker tag postgres:\${POSTGRES_VERSION} \${REGISTRY}/postgres:\${POSTGRES_VERSION}
-      sudo docker tag tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION}; \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+      sudo docker tag tmaxcloudck/hyperauth:b\${HYPERAUTH_SERVER_VERSION}; \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_SERVER_VERSION};
 
       sudo docker push \${REGISTRY}/postgres:\${POSTGRES_VERSION}
-      sudo docker push \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_VERSION};
+      sudo docker push \${REGISTRY}/tmaxcloudck/hyperauth:b\${HYPERAUTH_SERVER_VERSION};
       #rm -rf $HYPERAUTH_HOME;
       `;
   }
@@ -215,6 +229,31 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
 
+    // Step 0. hyperauth.config 설정
+    mainMaster.cmd = this._step0();
+    await mainMaster.exeCmd(callback);
+
+    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
+    if (process.env.RESOURCE === 'low') {
+      const script = `
+      cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
+      sed -i 's/cpu: "1"/#cpu: "1"/g' 1.initialization.yaml;
+      sed -i 's/memory: "2Gi"/#memory: "2Gi"/g' 1.initialization.yaml;
+
+      sed -i 's/cpu: "1"/#cpu: "1"/g' 2.hyperauth_deployment.yaml;
+      sed -i 's/memory: "1Gi"/#memory: "2Gi"/g' 2.hyperauth_deployment.yaml;
+
+      sed -i 's/cpu: "1"/#cpu: "1"/g' 4.kafka_all.yaml;
+      sed -i 's/memory: "1Gi"/#memory: "2Gi"/g' 4.kafka_all.yaml;
+      `;
+      mainMaster.cmd = script;
+      await mainMaster.exeCmd(callback);
+    }
+
+    // Step 1. installer 실행
+    mainMaster.cmd = this._step1();
+    await mainMaster.exeCmd(callback);
+
     // // Step 1. 초기화 작업
     // mainMaster.cmd = this._step1();
     // await mainMaster.exeCmd(callback);
@@ -239,6 +278,42 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     // await this._step4();
 
     console.debug('###### Finish installing main Master... ######');
+  }
+
+  private _step0() {
+    const { mainMaster } = this.env.getNodesSortedByRole();
+
+    // FIXME: default storageclass 설정하는 부분, 다른 쪽으로 빼야 할 듯
+    let script = `
+      kubectl patch storageclass csi-cephfs-sc -p '{"metadata": {"annotations":{"storageclass.kubernetes.io/is-default-class":"true"}}}'
+
+      cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
+      sudo sed -i 's|\\r$||g' hyperauth.config;
+      . hyperauth.config;
+
+      sudo sed -i "s|$POSTGRES_VERSION|${HyperAuthInstaller.POSTGRES_VERSION}|g" ./hyperauth.config;
+      sudo sed -i "s|$HYPERAUTH_SERVER_VERSION|${HyperAuthInstaller.HYPERAUTH_SERVER_VERSION}|g" ./hyperauth.config;
+      sudo sed -i "s|$KAFKA_VERSION|${HyperAuthInstaller.KAFKA_VERSION}|g" ./hyperauth.config;
+      sudo sed -i "s|$ZOOKEEPER_VERSION|${HyperAuthInstaller.ZOOKEEPER_VERSION}|g" ./hyperauth.config;
+      sudo sed -i "s|$HYPERAUTH_LOG_COLLECTOR_VERSION|${HyperAuthInstaller.HYPERAUTH_LOG_COLLECTOR_VERSION}|g" ./hyperauth.config;
+      sudo sed -i "s|$MAIN_MASTER_IP|${mainMaster.ip}|g" ./hyperauth.config;
+      sudo sed -i "s|$MASTER_NODE_ROOT_PASSWORD|${mainMaster.password}|g" ./hyperauth.config;
+      sudo sed -i "s|$MASTER_NODE_ROOT_USER|${mainMaster.user}|g" ./hyperauth.config;
+    `;
+
+    if (this.env.registry) {
+      script += `sudo sed -i "s|$REGISTRY|${this.env.registry}|g" ./hyperauth.config;`;
+    }
+
+    return script;
+  }
+
+  private _step1() {
+    return `
+    cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
+    sudo chmod +x install.sh;
+    ./install.sh
+    `;
   }
 
   // private _step1(): string {
@@ -460,12 +535,18 @@ export default class HyperAuthInstaller extends AbstractInstaller {
   }
 
   private _getRemoveScript(): string {
+    // return `
+    // cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
+    // kubectl delete -f 2.hyperauth_deployment.yaml;
+    // kubectl delete secret hyperauth-https-secret -n hyperauth;
+    // # rm -rf /etc/kubernetes/pki/hyperauth.crt;
+    // kubectl delete -f 1.initialization.yaml;
+    // rm -rf ~/${HyperAuthInstaller.INSTALL_HOME};
+    // `;
     return `
     cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f 2.hyperauth_deployment.yaml;
-    kubectl delete secret hyperauth-https-secret -n hyperauth;
-    # rm -rf /etc/kubernetes/pki/hyperauth.crt;
-    kubectl delete -f 1.initialization.yaml;
+    sudo chmod +x uninstall.sh;
+    ./uninstall.sh
     rm -rf ~/${HyperAuthInstaller.INSTALL_HOME};
     `;
   }
