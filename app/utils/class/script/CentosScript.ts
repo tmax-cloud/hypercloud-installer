@@ -137,6 +137,10 @@ EOF
     sudo chmod a+x /usr/local/bin/jq;
     jq -V;
 
+    # yq
+    wget https://github.com/mikefarah/yq/releases/download/v4.4.1/yq_linux_amd64 -O /usr/bin/yq &&\\
+    chmod +x /usr/bin/yq
+
     # sshpass
     sudo yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/sshpass-1.06-2.el7.x86_64.rpm;
 
