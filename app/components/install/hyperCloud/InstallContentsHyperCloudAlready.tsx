@@ -69,10 +69,10 @@ function InstallContentsHyperCloudAlready(props: any) {
     await hyperCloudOperatorInstaller.remove();
 
     // template service broker delete
-    // const templateSeviceBrokerInstaller =
-    //   TemplateSeviceBrokerInstaller.getInstance;
-    // templateSeviceBrokerInstaller.env = nowEnv;
-    // await templateSeviceBrokerInstaller.remove();
+    const templateSeviceBrokerInstaller =
+      TemplateSeviceBrokerInstaller.getInstance;
+    templateSeviceBrokerInstaller.env = nowEnv;
+    await templateSeviceBrokerInstaller.remove();
 
     // webhook delete
     // kube-apiserver.yaml 수정부분은 맨 마지막에 수행
@@ -276,8 +276,10 @@ function InstallContentsHyperCloudAlready(props: any) {
               <DialogContent>
                 <DialogContentText id="alert-dialog-description">
                   <span className={['lightDark', 'small'].join(' ')}>
-                    {CONST.PRODUCT.HYPERCLOUD.NAME} 를 삭제하시겠습니까?
-                  </span>
+                    {CONST.PRODUCT.HYPERCLOUD.NAME}
+{' '}
+를 삭제하시겠습니까?
+</span>
                 </DialogContentText>
               </DialogContent>
               <DialogActions>

@@ -238,6 +238,7 @@ export default class IngressControllerInstaller extends AbstractInstaller {
   private _shared() {
     return `
     cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest/;
+    sudo chmod +x install-ingress.sh;
     ./install-ingress.sh install_shared
     `;
   }
@@ -245,6 +246,7 @@ export default class IngressControllerInstaller extends AbstractInstaller {
   private _systemd() {
     return `
     cd ~/${IngressControllerInstaller.INSTALL_HOME}/manifest/;
+    sudo chmod +x install-ingress.sh;
     ./install-ingress.sh install_system
     `;
   }

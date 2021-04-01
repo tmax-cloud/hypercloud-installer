@@ -78,7 +78,6 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
       //     setProgress
       //   });
       // }
-      // FIXME: 임시 주석 처리
       const ingressControllerInstaller = IngressControllerInstaller.getInstance;
       ingressControllerInstaller.env = this.env;
       await ingressControllerInstaller.install({
@@ -111,8 +110,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     await this._removeMainMaster();
 
     // ingress controller 삭제
-    // FIXME: 현재 shared, system 둘 다 삭제함
-    // FIXME: 임시 주석 처리
+    // 현재 shared, system 둘 다 삭제함
     const ingressControllerInstaller = IngressControllerInstaller.getInstance;
     ingressControllerInstaller.env = this.env;
     await ingressControllerInstaller.remove();
