@@ -19,9 +19,9 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
 
   public static readonly CLUSTER_TSB_VERSION = `0.0.5`;
 
-  public static readonly CLUSTER_TSB_NAMESPACE = `cluster-tsb-ns`;
-
   public static readonly TSB_VERSION = `0.0.5`;
+
+  public static readonly CLUSTER_TSB_NAMESPACE = `cluster-tsb-ns`;
 
   public static readonly TSB_NAMESPACE = `tsb-ns`;
 
@@ -238,12 +238,12 @@ export default class TemplateSeviceBrokerInstaller extends AbstractInstaller {
     sudo sed -i 's|\\r$||g' tsb.config;
     . tsb.config;
 
-    sudo sed -i "s|$templateVersion|${TemplateSeviceBrokerInstaller.TEMPLATE_VERSION}|g" ./tsb.config;
-    sudo sed -i "s|$templateNamespace|${TemplateSeviceBrokerInstaller.TSB_NAMESPACE}|g" ./tsb.config;
-    sudo sed -i "s|$clusterTsbVersion|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_VERSION}|g" ./tsb.config;
-    sudo sed -i "s|$clusterTsbNamespace|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_NAMESPACE}|g" ./tsb.config;
-    sudo sed -i "s|$tsbVersion|${TemplateSeviceBrokerInstaller.TSB_VERSION}|g" ./tsb.config;
-    sudo sed -i "s|$tsbNamespace|${TemplateSeviceBrokerInstaller.TSB_NAMESPACE}|g" ./tsb.config;
+    # sudo sed -i "s|$templateVersion|${TemplateSeviceBrokerInstaller.TEMPLATE_VERSION}|g" ./tsb.config;
+    # sudo sed -i "s|$templateNamespace|${TemplateSeviceBrokerInstaller.TEMPLATE_NAMESPACE}|g" ./tsb.config;
+    # sudo sed -i "s|$clusterTsbVersion|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_VERSION}|g" ./tsb.config;
+    # sudo sed -i "s|$tsbVersion|${TemplateSeviceBrokerInstaller.TSB_VERSION}|g" ./tsb.config;
+    # sudo sed -i "s|$clusterTsbNamespace|${TemplateSeviceBrokerInstaller.CLUSTER_TSB_NAMESPACE}|g" ./tsb.config;
+    # sudo sed -i "s|$tsbNamespace|${TemplateSeviceBrokerInstaller.TSB_NAMESPACE}|g" ./tsb.config;
   `;
 
     if (this.env.registry) {

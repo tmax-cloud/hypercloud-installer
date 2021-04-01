@@ -126,15 +126,15 @@ function InstallContentsHyperCloud3(props: any) {
       // setProgress(80);
 
       // // template service broker install
-      // await templateSeviceBrokerInstaller.install({
-      //   callback,
-      //   setProgress
-      // });
-      // setProgress(100);
+      await templateSeviceBrokerInstaller.install({
+        callback,
+        setProgress
+      });
+      setProgress(100);
     } catch (error) {
       console.error(error);
 
-      // await templateSeviceBrokerInstaller.remove();
+      await templateSeviceBrokerInstaller.remove();
       // await hyperCloudConsoleInstaller.remove();
       // await hyperCloudWebhookInstaller.remove();
       await hyperCloudOperatorInstaller.remove();
