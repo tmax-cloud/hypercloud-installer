@@ -107,23 +107,23 @@ function InstallContentsHyperCloud3(props: any) {
       // });
       // setProgress(40);
 
-      // // console install
-      // await hyperCloudConsoleInstaller.install({
-      //   callback,
-      //   setProgress
-      // });
-      // setProgress(60);
+      // console install
+      await hyperCloudConsoleInstaller.install({
+        callback,
+        setProgress
+      });
+      setProgress(60);
 
       // // 30초 대기 console pod 정상 동작 할 때 까지
-      // await new Promise(resolve => setTimeout(resolve, 30000));
+      await new Promise(resolve => setTimeout(resolve, 30000));
 
-      // // realm import
-      // await hyperAuthInstaller.realmImport({
-      //   state,
-      //   callback,
-      //   setProgress
-      // });
-      // setProgress(80);
+      // realm import
+      await hyperAuthInstaller.realmImport({
+        state,
+        callback,
+        setProgress
+      });
+      setProgress(80);
 
       // // template service broker install
       await templateSeviceBrokerInstaller.install({
@@ -135,7 +135,7 @@ function InstallContentsHyperCloud3(props: any) {
       console.error(error);
 
       await templateSeviceBrokerInstaller.remove();
-      // await hyperCloudConsoleInstaller.remove();
+      await hyperCloudConsoleInstaller.remove();
       // await hyperCloudWebhookInstaller.remove();
       await hyperCloudOperatorInstaller.remove();
       // await hyperCloudWebhookInstaller.rollbackApiServerYaml();

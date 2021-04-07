@@ -147,8 +147,13 @@ EOF
     # hyperauth 인증 키 생성 관련
     yum install -y openssl
     yum install -y java-1.8.0-openjdk-devel.x86_64
-    #apt install openssl
-    #apt install oracle-java8-installer
+    #apt install -y openssl
+    #apt install -y oracle-java8-installer
+
+
+    # epel pacakge repo 설치
+    # crio에서 fuse-overlayfs 패키지가 필요한대, epel에 있음
+    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm;
     `;
   }
 
@@ -172,6 +177,7 @@ EOF
   }
 
   setKubernetesRepo(): string {
+    // FIXME: 가이드 상에는 repo_gpgcheck=1 이지만, 설치 과정 에러가 가끔 발생하여 repo_gpgcheck=0으로 설정
     return `
     cat <<EOF | sudo tee /etc/yum.repos.d/kubernetes.repo
 [kubernetes]
@@ -179,7 +185,7 @@ name=Kubernetes
 baseurl=https://packages.cloud.google.com/yum/repos/kubernetes-el7-\\$basearch
 enabled=1
 gpgcheck=1
-repo_gpgcheck=1
+repo_gpgcheck=0
 gpgkey=https://packages.cloud.google.com/yum/doc/yum-key.gpg https://packages.cloud.google.com/yum/doc/rpm-package-key.gpg
 EOF`;
   }

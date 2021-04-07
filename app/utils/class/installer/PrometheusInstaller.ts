@@ -21,8 +21,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
 
   public static readonly NODE_EXPORTER_VERSION = `0.18.1`;
 
-  public static readonly GRAFANA_VERSION = `6.4.3`;
-
   public static readonly KUBE_STATE_METRICS_VERSION = `1.8.0`;
 
   public static readonly CONFIGMAP_RELOADER_VERSION = `0.34.0`;
@@ -34,6 +32,8 @@ export default class PrometheusInstaller extends AbstractInstaller {
   public static readonly PROMETHEUS_ADAPTER_VERSION = `0.5.0`;
 
   public static readonly ALERTMANAGER_VERSION = `0.20.0`;
+
+  public static readonly GRAFANA_VERSION = `6.4.3`;
 
   // singleton
   private static instance: PrometheusInstaller;
@@ -260,34 +260,42 @@ export default class PrometheusInstaller extends AbstractInstaller {
   private async _installMainMaster(state: any, callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getVersionEditScript();
+    // mainMaster.cmd = this._getVersionEditScript();
+    // await mainMaster.exeCmd(callback);
+
+    // Step 0. Prometheus Config 설정
+    mainMaster.cmd = this._step0();
     await mainMaster.exeCmd(callback);
 
-    // Step 1. prometheus namespace 및 crd 생성
+    // Step 1. installer 실행
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
-    // manifest/setup/ yaml 적용 후, 특정 pod가 뜨고 난 후 다음 작업 해야함
-    // 30초 대기
-    await new Promise(resolve => setTimeout(resolve, 30000));
+    // // Step 1. prometheus namespace 및 crd 생성
+    // mainMaster.cmd = this._step1();
+    // await mainMaster.exeCmd(callback);
 
-    // apply state option
-    await this.applyStateOption(state);
+    // // manifest/setup/ yaml 적용 후, 특정 pod가 뜨고 난 후 다음 작업 해야함
+    // // 30초 대기
+    // await new Promise(resolve => setTimeout(resolve, 30000));
 
-    // Step 2. Prometheus 모듈들에 대한 deploy 및 RBAC 생성
-    mainMaster.cmd = this._step2();
-    await mainMaster.exeCmd(callback);
+    // // apply state option
+    // await this.applyStateOption(state);
 
-    // Step 3. kube-scheduler 와 kube-controller-manager 설정
-    mainMaster.cmd = this._step3();
-    await mainMaster.exeCmd(callback);
+    // // Step 2. Prometheus 모듈들에 대한 deploy 및 RBAC 생성
+    // mainMaster.cmd = this._step2();
+    // await mainMaster.exeCmd(callback);
 
-    // monitoring namespace의 servicemonitor 객체 중 kube-controller-manager 와 kube-scheduler의 spec.endpoints.metricRelabelings 부분 삭제
-    await this._EditYamlScript();
+    // // Step 3. kube-scheduler 와 kube-controller-manager 설정
+    // mainMaster.cmd = this._step3();
+    // await mainMaster.exeCmd(callback);
 
-    // kube-system namespace에 있는 모든 kube-schduler pod의 metadata.labels에k8s-app: kube-scheduler추가
-    // kube-system namespace에 있는 모든 kube-contoroller-manager pod의 metadata.labels에k8s-app: kube-controller-manager 추가
-    await this._EditYamlScript2();
+    // // monitoring namespace의 servicemonitor 객체 중 kube-controller-manager 와 kube-scheduler의 spec.endpoints.metricRelabelings 부분 삭제
+    // await this._EditYamlScript();
+
+    // // kube-system namespace에 있는 모든 kube-schduler pod의 metadata.labels에k8s-app: kube-scheduler추가
+    // // kube-system namespace에 있는 모든 kube-contoroller-manager pod의 metadata.labels에k8s-app: kube-controller-manager 추가
+    // await this._EditYamlScript2();
     console.debug('###### Finish installing main Master... ######');
   }
 
@@ -329,10 +337,38 @@ export default class PrometheusInstaller extends AbstractInstaller {
       `;
   }
 
+  private _step0(): string {
+    // XXX: sed 부분 주석 처리, config 파일에 적힌 내용 sed하지 않음
+    let script = `
+      cd ~/${PrometheusInstaller.INSTALL_HOME};
+      sudo sed -i 's|\\r$||g' version.conf;
+      . version.conf;
+
+      # sudo sed -i "s|$PROMETHEUS_VERSION|v${PrometheusInstaller.PROMETHEUS_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$PROMETHEUS_OPERATOR_VERSION|v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$NODE_EXPORTER_VERSION|v${PrometheusInstaller.NODE_EXPORTER_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$KUBE_STATE_METRICS_VERSION|v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$CONFIGMAP_RELOADER_VERSION|v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$CONFIGMAP_RELOAD_VERSION|v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$KUBE_RBAC_PROXY_VERSION|v${PrometheusInstaller.KUBE_RBAC_PROXY_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$PROMETHEUS_ADAPTER_VERSION|v${PrometheusInstaller.PROMETHEUS_ADAPTER_VERSION}|g" ./version.conf;
+      # sudo sed -i "s|$ALERTMANAGER_VERSION|v${PrometheusInstaller.ALERTMANAGER_VERSION}|g" ./version.conf;
+    `;
+
+    if (this.env.registry) {
+      script += `sudo sed -i "s|$REGISTRY|${this.env.registry}|g" ./version.conf;`;
+    }
+
+    return script;
+  }
+
   private _step1(): string {
+    // FIXME: 추후 storageclass name sed 부분 제거 해야함
     return `
-      cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest;
-      kubectl create -f setup/;
+      cd ~/${PrometheusInstaller.INSTALL_HOME};
+      sudo sed -i "s|csi-rbd-sc|csi-cephfs-sc|g" yaml/manifests/prometheus-prometheus.yaml;
+      sudo chmod +x install.sh;
+      ./install.sh;
       `;
   }
 
@@ -480,11 +516,9 @@ export default class PrometheusInstaller extends AbstractInstaller {
 
   private _getRemoveScript(): string {
     return `
-    cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest;
-    kubectl delete -f kube-scheduler-prometheus-discovery.yaml;
-    kubectl delete -f kube-controller-manager-prometheus-discovery.yaml;
-    kubectl delete -f manifests/;
-    kubectl delete -f setup/;
+    cd ~/${PrometheusInstaller.INSTALL_HOME};
+    sudo chmod +x uninstall.sh;
+    ./uninstall.sh;
     rm -rf ~/${PrometheusInstaller.INSTALL_HOME};
     `;
   }
