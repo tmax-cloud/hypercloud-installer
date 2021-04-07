@@ -168,13 +168,21 @@ export default class GrafanaInstaller extends AbstractInstaller {
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this._getVersionEditScript();
+    // mainMaster.cmd = this._getVersionEditScript();
+    // await mainMaster.exeCmd(callback);
+
+    // Step 0. Grafana Config 설정
+    mainMaster.cmd = this._step0();
+    await mainMaster.exeCmd(callback);
+
+    // Step 1. installer 실행
+    mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
     // Step 1. Prometheus 확인
     // Step 2. Grafana deploy
-    mainMaster.cmd = this._step2();
-    await mainMaster.exeCmd(callback);
+    // mainMaster.cmd = this._step2();
+    // await mainMaster.exeCmd(callback);
 
     console.debug('###### Finish installing main Master... ######');
   }
@@ -185,6 +193,31 @@ export default class GrafanaInstaller extends AbstractInstaller {
     mainMaster.cmd = this._getRemoveScript();
     await mainMaster.exeCmd();
     console.debug('###### Finish remove main Master... ######');
+  }
+
+  private _step0(): string {
+    // XXX: sed 부분 주석 처리, config 파일에 적힌 내용 sed하지 않음
+    let script = `
+      cd ~/${GrafanaInstaller.INSTALL_HOME};
+      sudo sed -i 's|\\r$||g' version.conf;
+      . version.conf;
+
+      # sudo sed -i "s|$GRAFANA_VERSION|v${GrafanaInstaller.GRAFANA_VERSION}|g" ./version.conf;
+    `;
+
+    if (this.env.registry) {
+      script += `sudo sed -i "s|$REGISTRY|${this.env.registry}|g" ./version.conf;`;
+    }
+
+    return script;
+  }
+
+  private _step1(): string {
+    return `
+      cd ~/${GrafanaInstaller.INSTALL_HOME};
+      sudo chmod +x install.sh;
+      ./install.sh;
+      `;
   }
 
   private _getVersionEditScript(): string {
@@ -204,7 +237,8 @@ export default class GrafanaInstaller extends AbstractInstaller {
   private _getRemoveScript(): string {
     return `
     cd ~/${GrafanaInstaller.INSTALL_HOME};
-    kubectl delete -f yaml/;
+    sudo chmod +x uninstall.sh;
+    ./uninstall.sh;
     rm -rf ~/${GrafanaInstaller.INSTALL_HOME};
     `;
   }

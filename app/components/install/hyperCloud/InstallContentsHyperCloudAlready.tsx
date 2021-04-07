@@ -54,9 +54,9 @@ function InstallContentsHyperCloudAlready(props: any) {
     console.debug(`nowEnv`, nowEnv);
 
     // console delete
-    // const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
-    // hyperCloudConsoleInstaller.env = nowEnv;
-    // await hyperCloudConsoleInstaller.remove();
+    const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
+    hyperCloudConsoleInstaller.env = nowEnv;
+    await hyperCloudConsoleInstaller.remove();
 
     // webhook delete
     // const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;
@@ -276,10 +276,8 @@ function InstallContentsHyperCloudAlready(props: any) {
               <DialogContent>
                 <DialogContentText id="alert-dialog-description">
                   <span className={['lightDark', 'small'].join(' ')}>
-                    {CONST.PRODUCT.HYPERCLOUD.NAME}
-{' '}
-를 삭제하시겠습니까?
-</span>
+                    {CONST.PRODUCT.HYPERCLOUD.NAME} 를 삭제하시겠습니까?
+                  </span>
                 </DialogContentText>
               </DialogContent>
               <DialogActions>

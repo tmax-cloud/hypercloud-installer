@@ -213,7 +213,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
     mainMaster.cmd = `
     export HYPERAUTH_SERVICE_IP=\`kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
-    export HYPERCLOUD_CONSOLE_IP=\`kubectl describe service console-lb -n console-system | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
+    export HYPERCLOUD_CONSOLE_IP=\`kubectl describe service console -n console-system | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
     \\cp ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImport.sh ~/${HyperAuthInstaller.INSTALL_HOME}/manifest/tmaxRealmImportCopy.sh;
     cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
     sed -i 's|\\r$||g' tmaxRealmImportCopy.sh;
@@ -234,17 +234,21 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     await mainMaster.exeCmd(callback);
 
     // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
+    // 카프카 설치 안함
     if (process.env.RESOURCE === 'low') {
       const script = `
       cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
-      sed -i 's/cpu: "1"/#cpu: "1"/g' 1.initialization.yaml;
-      sed -i 's/memory: "2Gi"/#memory: "2Gi"/g' 1.initialization.yaml;
+      sed -i 's/cpu: "1"/#cpu: "0.3"/g' 1.initialization.yaml;
+      sed -i 's/memory: "2Gi"/#memory: "500Mi"/g' 1.initialization.yaml;
 
-      sed -i 's/cpu: "1"/#cpu: "1"/g' 2.hyperauth_deployment.yaml;
-      sed -i 's/memory: "1Gi"/#memory: "2Gi"/g' 2.hyperauth_deployment.yaml;
+      sed -i 's/cpu: "1"/#cpu: "0.3"/g' 2.hyperauth_deployment.yaml;
+      sed -i 's/memory: "1Gi"/#memory: "300Mi"/g' 2.hyperauth_deployment.yaml;
 
-      sed -i 's/cpu: "1"/#cpu: "1"/g' 4.kafka_all.yaml;
-      sed -i 's/memory: "1Gi"/#memory: "2Gi"/g' 4.kafka_all.yaml;
+      sed -i 's/cpu: "1"/#cpu: "0.3"/g' 4.kafka_all.yaml;
+      sed -i 's/memory: "1Gi"/#memory: "300Mi"/g' 4.kafka_all.yaml;
+
+      sed -i 's/kubectl apply -f 4.kafka_all.yaml/#kubectl apply -f 4.kafka_all.yaml/g' install.sh;
+      sed -i 's/kubectl apply -f 5.hyperauth_log_collector.yaml/#kubectl apply -f 5.hyperauth_log_collector.yaml/g' install.sh;
       `;
       mainMaster.cmd = script;
       await mainMaster.exeCmd(callback);

@@ -13,7 +13,7 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${HyperCloudConsoleInstaller.INSTALL_HOME}/image`;
 
-  public static readonly CONSOLE_VERSION = `0.5.1.30`;
+  public static readonly CONSOLE_VERSION = `5.1.2.1`;
 
   public static readonly OPERATOR_VERSION = `5.1.0.1`;
 
@@ -177,8 +177,11 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     console.debug('@@@@@@ Start installing console main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
 
+    // FIXME: 추후 - --managed-gitlab-url=@@GITLAB@@ 주석처리하는 sed 부분 제거 해야함
     mainMaster.cmd = `
     cd ~/${HyperCloudConsoleInstaller.INSTALL_HOME};
+
+    sed -i 's/- --managed-gitlab-url=@@GITLAB@@//g' deployments/5.deploy.yaml;
 
     export OPERATOR_VER=${HyperCloudConsoleInstaller.OPERATOR_VERSION}
     export CONSOLE_VER=${HyperCloudConsoleInstaller.CONSOLE_VERSION}
@@ -187,7 +190,7 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     export REALM=tmax
     export KEYCLOAK=hyperauth.org
     export CLIENTID=hypercloud5
-    export MC_MODE=true
+    export MC_MODE=false
 
     chmod +x install.sh
     ./install.sh
