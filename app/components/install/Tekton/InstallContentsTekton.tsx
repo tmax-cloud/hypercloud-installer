@@ -7,22 +7,14 @@ import InstallContentsTekton3 from './InstallContentsTekton3';
 import InstallContentsTekton4 from './InstallContentsTekton4';
 import InstallContentsTektonAlready from './InstallContentsTektonAlready';
 import InstallKubePlease from '../InstallKubePlease';
-import TektonApprovalInstaller from '../../../utils/class/installer/TektonApprovalInstaller';
-import TektonCiCdTemplatesInstaller from '../../../utils/class/installer/TektonCiCdTemplatesInstaller';
-import TektonMailNotifierInstaller from '../../../utils/class/installer/TektonMailNotifierInstaller';
 import TektonPipelineInstaller from '../../../utils/class/installer/TektonPipelineInstaller';
-import TektonTriggerInstaller from '../../../utils/class/installer/TektonTriggerInstaller';
 
 function InstallContentsTekton(props: any) {
   console.debug(InstallContentsTekton.name, props);
   const { history, location, match } = props;
 
   const [state, setState] = useState({
-    pipeline_version: TektonPipelineInstaller.VERSION,
-    trigger_version: TektonTriggerInstaller.VERSION,
-    approval_version: TektonApprovalInstaller.VERSION,
-    mailNotifier_version: TektonMailNotifierInstaller.VERSION,
-    cicdTemplates_version: TektonCiCdTemplatesInstaller.VERSION
+    pipeline_version: TektonPipelineInstaller.VERSION
   });
 
   return (

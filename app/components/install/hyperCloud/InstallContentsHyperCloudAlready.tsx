@@ -20,7 +20,6 @@ import * as env from '../../../utils/common/env';
 import routes from '../../../utils/constants/routes.json';
 import HyperCloudOperatorInstaller from '../../../utils/class/installer/HyperCloudOperatorInstaller';
 import HyperCloudConsoleInstaller from '../../../utils/class/installer/HyperCloudConsoleInstaller';
-import HyperCloudWebhookInstaller from '../../../utils/class/installer/HyperCloudWebhookInstaller';
 import TemplateSeviceBrokerInstaller from '../../../utils/class/installer/TemplateSeviceBrokerInstaller';
 
 function InstallContentsHyperCloudAlready(props: any) {
@@ -58,11 +57,6 @@ function InstallContentsHyperCloudAlready(props: any) {
     hyperCloudConsoleInstaller.env = nowEnv;
     await hyperCloudConsoleInstaller.remove();
 
-    // webhook delete
-    // const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;
-    // hyperCloudWebhookInstaller.env = nowEnv;
-    // await hyperCloudWebhookInstaller.remove();
-
     // operator delete
     const hyperCloudOperatorInstaller = HyperCloudOperatorInstaller.getInstance;
     hyperCloudOperatorInstaller.env = nowEnv;
@@ -73,11 +67,6 @@ function InstallContentsHyperCloudAlready(props: any) {
       TemplateSeviceBrokerInstaller.getInstance;
     templateSeviceBrokerInstaller.env = nowEnv;
     await templateSeviceBrokerInstaller.remove();
-
-    // webhook delete
-    // kube-apiserver.yaml 수정부분은 맨 마지막에 수행
-    // api server재기동에 시간이 걸려서, 다음 명령에서 kubectl이 동작하지 않음
-    // await hyperCloudWebhookInstaller.rollbackApiServerYaml();
   };
 
   const getNetworkJsx = state => {
@@ -217,7 +206,7 @@ function InstallContentsHyperCloudAlready(props: any) {
               <a
                 onClick={async () => {
                   const { mainMaster } = nowEnv.getNodesSortedByRole();
-                  mainMaster.cmd = `kubectl get svc -n console-system -o jsonpath='{.items[?(@.metadata.name=="console-lb")].status.loadBalancer.ingress[0].ip}'`;
+                  mainMaster.cmd = `kubectl get svc -n console-system -o jsonpath='{.items[?(@.metadata.name=="console-system")].status.loadBalancer.ingress[0].ip}'`;
                   let ip;
                   await mainMaster.exeCmd({
                     close: () => {},

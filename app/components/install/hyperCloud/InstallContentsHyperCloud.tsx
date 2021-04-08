@@ -8,7 +8,6 @@ import InstallContentsHyperCloud4 from './InstallContentsHyperCloud4';
 import InstallContentsHyperCloudAlready from './InstallContentsHyperCloudAlready';
 import InstallKubePlease from '../InstallKubePlease';
 import HyperCloudOperatorInstaller from '../../../utils/class/installer/HyperCloudOperatorInstaller';
-import HyperCloudWebhookInstaller from '../../../utils/class/installer/HyperCloudWebhookInstaller';
 import HyperCloudConsoleInstaller from '../../../utils/class/installer/HyperCloudConsoleInstaller';
 import InstallContentsHyperCloud2Network from './InstallContentsHyperCloud2Network';
 import InstallContentsHyperCloud2Admin from './InstallContentsHyperCloud2Admin';
@@ -19,7 +18,6 @@ function InstallContentsHyperCloud(props: any) {
 
   const [state, setState] = useState({
     operator_version: HyperCloudOperatorInstaller.HPCD_VERSION,
-    webhook_version: HyperCloudWebhookInstaller.HPCD_WEBHOOK_VERSION,
     console_version: HyperCloudConsoleInstaller.CONSOLE_VERSION,
     isUseIngress: true,
     sharedIngress: true,

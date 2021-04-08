@@ -14,10 +14,6 @@ import routes from '../../../utils/constants/routes.json';
 import * as env from '../../../utils/common/env';
 import CONST from '../../../utils/constants/constant';
 import TektonPipelineInstaller from '../../../utils/class/installer/TektonPipelineInstaller';
-import TektonApprovalInstaller from '../../../utils/class/installer/TektonApprovalInstaller';
-import TektonCiCdTemplatesInstaller from '../../../utils/class/installer/TektonCiCdTemplatesInstaller';
-import TektonMailNotifierInstaller from '../../../utils/class/installer/TektonMailNotifierInstaller';
-import TektonTriggerInstaller from '../../../utils/class/installer/TektonTriggerInstaller';
 import { AppContext } from '../../../containers/AppContext';
 
 const logRef: React.RefObject<HTMLTextAreaElement> = React.createRef();
@@ -73,61 +69,21 @@ function InstallContentsTekton3(props: any) {
     };
 
     const tektonPipelineInstaller = TektonPipelineInstaller.getInstance;
-    const tektonTriggerInstaller = TektonTriggerInstaller.getInstance;
-    const tektonApprovalInstaller = TektonApprovalInstaller.getInstance;
-    const tektonMailNotifierInstaller = TektonMailNotifierInstaller.getInstance;
-    const tektonCiCdTemplatesInstaller =
-      TektonCiCdTemplatesInstaller.getInstance;
 
     tektonPipelineInstaller.env = nowEnv;
-    tektonTriggerInstaller.env = nowEnv;
-    tektonApprovalInstaller.env = nowEnv;
-    tektonMailNotifierInstaller.env = nowEnv;
-    tektonCiCdTemplatesInstaller.env = nowEnv;
 
     try {
+      setProgress(20);
       // tektonPipelineInstaller install
       await tektonPipelineInstaller.install({
         callback,
         setProgress
       });
-      setProgress(20);
 
-      // tektonTriggerInstaller install
-      await tektonTriggerInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(40);
-
-      // tektonApprovalInstaller install
-      await tektonApprovalInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(60);
-
-      // tektonMailNotifierInstaller install
-      await tektonMailNotifierInstaller.install({
-        callback,
-        setProgress
-      });
-      setProgress(80);
-
-      // tektonCiCdTemplatesInstaller install
-      await tektonCiCdTemplatesInstaller.install({
-        callback,
-        setProgress
-      });
       setProgress(100);
     } catch (error) {
       console.error(error);
 
-      // 설치 역순
-      await tektonCiCdTemplatesInstaller.remove();
-      await tektonMailNotifierInstaller.remove();
-      await tektonApprovalInstaller.remove();
-      await tektonTriggerInstaller.remove();
       await tektonPipelineInstaller.remove();
     } finally {
       console.log();

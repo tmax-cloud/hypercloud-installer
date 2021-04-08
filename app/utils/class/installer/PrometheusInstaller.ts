@@ -260,8 +260,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
   private async _installMainMaster(state: any, callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    // mainMaster.cmd = this._getVersionEditScript();
-    // await mainMaster.exeCmd(callback);
 
     // Step 0. Prometheus Config 설정
     mainMaster.cmd = this._step0();
@@ -270,32 +268,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
     // Step 1. installer 실행
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
-
-    // // Step 1. prometheus namespace 및 crd 생성
-    // mainMaster.cmd = this._step1();
-    // await mainMaster.exeCmd(callback);
-
-    // // manifest/setup/ yaml 적용 후, 특정 pod가 뜨고 난 후 다음 작업 해야함
-    // // 30초 대기
-    // await new Promise(resolve => setTimeout(resolve, 30000));
-
-    // // apply state option
-    // await this.applyStateOption(state);
-
-    // // Step 2. Prometheus 모듈들에 대한 deploy 및 RBAC 생성
-    // mainMaster.cmd = this._step2();
-    // await mainMaster.exeCmd(callback);
-
-    // // Step 3. kube-scheduler 와 kube-controller-manager 설정
-    // mainMaster.cmd = this._step3();
-    // await mainMaster.exeCmd(callback);
-
-    // // monitoring namespace의 servicemonitor 객체 중 kube-controller-manager 와 kube-scheduler의 spec.endpoints.metricRelabelings 부분 삭제
-    // await this._EditYamlScript();
-
-    // // kube-system namespace에 있는 모든 kube-schduler pod의 metadata.labels에k8s-app: kube-scheduler추가
-    // // kube-system namespace에 있는 모든 kube-contoroller-manager pod의 metadata.labels에k8s-app: kube-controller-manager 추가
-    // await this._EditYamlScript2();
     console.debug('###### Finish installing main Master... ######');
   }
 
@@ -305,36 +277,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
     mainMaster.cmd = this._getRemoveScript();
     await mainMaster.exeCmd();
     console.debug('###### Finish remove main Master... ######');
-  }
-
-  private _getVersionEditScript(): string {
-    return `
-      export PROMETHEUS_VERSION=v${PrometheusInstaller.PROMETHEUS_VERSION};
-      export PROMETHEUS_OPERATOR_VERSION=v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION};
-      export NODE_EXPORTER_VERSION=v${PrometheusInstaller.NODE_EXPORTER_VERSION};
-      # export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
-      export KUBE_STATE_METRICS_VERSION=v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION};
-      export CONFIGMAP_RELOADER_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION};
-      export CONFIGMAP_RELOAD_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION};
-      export KUBE_RBAC_PROXY_VERSION=v${PrometheusInstaller.KUBE_RBAC_PROXY_VERSION};
-      export PROMETHEUS_ADAPTER_VERSION=v${PrometheusInstaller.PROMETHEUS_ADAPTER_VERSION};
-      export ALERTMANAGER_VERSION=v${PrometheusInstaller.ALERTMANAGER_VERSION};
-
-      cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/;
-      sed -i 's/{ALERTMANAGER_VERSION}/'\${ALERTMANAGER_VERSION}'/g' alertmanager-alertmanager.yaml;
-      # sed -i 's/{GRAFANA_VERSION}/'\${GRAFANA_VERSION}'/g' grafana-deployment.yaml;
-      sed -i 's/{KUBE_RBAC_PROXY_VERSION}/'\${KUBE_RBAC_PROXY_VERSION}'/g' kube-state-metrics-deployment.yaml;
-      sed -i 's/{KUBE_STATE_METRICS_VERSION}/'\${KUBE_STATE_METRICS_VERSION}'/g' kube-state-metrics-deployment.yaml;
-      sed -i 's/{NODE_EXPORTER_VERSION}/'\${NODE_EXPORTER_VERSION}'/g' node-exporter-daemonset.yaml;
-      sed -i 's/{KUBE_RBAC_PROXY_VERSION}/'\${KUBE_RBAC_PROXY_VERSION}'/g' node-exporter-daemonset.yaml;
-      sed -i 's/{PROMETHEUS_ADAPTER_VERSION}/'\${PROMETHEUS_ADAPTER_VERSION}'/g' prometheus-adapter-deployment.yaml;
-      sed -i 's/{PROMETHEUS_VERSION}/'\${PROMETHEUS_VERSION}'/g' prometheus-prometheus.yaml;
-
-      cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/setup/;
-      sed -i 's/{PROMETHEUS_OPERATOR_VERSION}/'\${PROMETHEUS_OPERATOR_VERSION}'/g' prometheus-operator-deployment.yaml;
-      sed -i 's/{CONFIGMAP_RELOADER_VERSION}/'\${CONFIGMAP_RELOADER_VERSION}'/g' prometheus-operator-deployment.yaml;
-      sed -i 's/{CONFIGMAP_RELOAD_VERSION}/'\${CONFIGMAP_RELOAD_VERSION}'/g' prometheus-operator-deployment.yaml;
-      `;
   }
 
   private _step0(): string {
@@ -372,148 +314,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
       `;
   }
 
-  private async applyStateOption(state: any) {
-    console.error(state);
-    const { mainMaster } = this.env.getNodesSortedByRole();
-
-    if (!state.isUsePvc) {
-      mainMaster.cmd = `cat ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/prometheus-prometheus.yaml;`;
-      let clusterYaml;
-      await mainMaster.exeCmd({
-        close: () => {},
-        stdout: (data: string) => {
-          clusterYaml = YAML.parse(data.toString());
-        },
-        stderr: () => {}
-      });
-
-      delete clusterYaml.spec.storage;
-
-      mainMaster.cmd += `echo "${YAML.stringify(clusterYaml)}" > ~/${
-        PrometheusInstaller.INSTALL_HOME
-      }/manifest/manifests/prometheus-prometheus.yaml;`;
-      await mainMaster.exeCmd();
-    }
-
-    mainMaster.cmd = `
-    sed -i 's/port: 9090/port: ${state.port}/g' ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/prometheus-service.yaml;
-    sed -i 's/type: NodePort/type: ${state.serviceType}/g' ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/prometheus-service.yaml
-    `;
-    await mainMaster.exeCmd();
-  }
-
-  private _step2(): string {
-    return `
-    cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest;
-
-    kubectl create -f manifests/;
-    # kubectl get svc -n monitoring prometheus-k8s -o yaml | sed "s|type: NodePort|type: LoadBalancer|g" | kubectl replace -f -;
-    # kubectl get svc -n monitoring grafana -o yaml | sed "s|type: ClusterIP|type: LoadBalancer|g" | kubectl replace -f -;
-    `;
-  }
-
-  private _step3(): string {
-    return `
-    cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest;
-    kubectl create -f kube-controller-manager-prometheus-discovery.yaml;
-    kubectl create -f kube-scheduler-prometheus-discovery.yaml;
-    `;
-  }
-
-  private async _EditYamlScript2() {
-    const { mainMaster } = this.env.getNodesSortedByRole();
-
-    mainMaster.cmd = `kubectl get pod -n kube-system -o=jsonpath='{.items[*].metadata.name}';`;
-    let podNameStr;
-    await mainMaster.exeCmd({
-      close: () => {},
-      stdout: (data: string) => {
-        podNameStr = data.toString();
-      },
-      stderr: () => {}
-    });
-    const podNameList = podNameStr.split(' ');
-    const schedulerNameList: string[] = [];
-    const controllerNameList: string[] = [];
-
-    podNameList.map((podName: string) => {
-      if (podName.startsWith('kube-scheduler')) {
-        schedulerNameList.push(podName);
-      } else if (podName.startsWith('kube-controller-manager')) {
-        controllerNameList.push(podName);
-      }
-    });
-    mainMaster.cmd = '';
-    schedulerNameList.map(podName => {
-      mainMaster.cmd += `kubectl get pod -n kube-system ${podName} -o yaml | sed "s|labels:|labels:\\n    k8s-app: kube-scheduler|g" | kubectl replace -f -;`;
-    });
-    controllerNameList.map(podName => {
-      mainMaster.cmd += `kubectl get pod -n kube-system ${podName} -o yaml | sed "s|labels:|labels:\\n    k8s-app: kube-controller-manager|g" | kubectl replace -f -;`;
-    });
-
-    await mainMaster.exeCmd();
-  }
-
-  private async _EditYamlScript() {
-    const { mainMaster } = this.env.getNodesSortedByRole();
-
-    // kube-controller-manager 변경
-    mainMaster.cmd = `kubectl get servicemonitor -n monitoring kube-controller-manager -o yaml;`;
-    let controllerYaml;
-    await mainMaster.exeCmd({
-      close: () => {},
-      stdout: (data: string) => {
-        controllerYaml = YAML.parse(data.toString());
-      },
-      stderr: () => {}
-    });
-    console.error(controllerYaml);
-    for (let i = 0; i < controllerYaml.spec.endpoints.length; i += 1) {
-      delete controllerYaml.spec.endpoints[i].metricRelabelings;
-    }
-    mainMaster.cmd = `
-    echo "${YAML.stringify(controllerYaml)}" > ~/${
-      PrometheusInstaller.INSTALL_HOME
-    }/manifest/controller.yaml;
-    sed -i "s|${controllerYaml.metadata.resourceVersion}|\\"${
-      controllerYaml.metadata.resourceVersion
-    }\\"|g" ~/${PrometheusInstaller.INSTALL_HOME}/manifest/controller.yaml;
-    kubectl replace -f ~/${
-      PrometheusInstaller.INSTALL_HOME
-    }/manifest/controller.yaml;
-    #rm -rf ~/${PrometheusInstaller.INSTALL_HOME}/manifest/controller.yaml;
-    `;
-    await mainMaster.exeCmd();
-
-    // kube-scheduler 변경
-    mainMaster.cmd = `kubectl get servicemonitor -n monitoring kube-scheduler -o yaml;`;
-    let schedulerYaml;
-    await mainMaster.exeCmd({
-      close: () => {},
-      stdout: (data: string) => {
-        schedulerYaml = YAML.parse(data.toString());
-      },
-      stderr: () => {}
-    });
-    console.error(schedulerYaml);
-    for (let i = 0; i < schedulerYaml.spec.endpoints.length; i += 1) {
-      delete schedulerYaml.spec.endpoints[i].metricRelabelings;
-    }
-    mainMaster.cmd = `
-    echo "${YAML.stringify(schedulerYaml)}" > ~/${
-      PrometheusInstaller.INSTALL_HOME
-    }/manifest/scheduler.yaml;
-    sed -i "s|${schedulerYaml.metadata.resourceVersion}|\\"${
-      schedulerYaml.metadata.resourceVersion
-    }\\"|g" ~/${PrometheusInstaller.INSTALL_HOME}/manifest/scheduler.yaml;
-    kubectl replace -f ~/${
-      PrometheusInstaller.INSTALL_HOME
-    }/manifest/scheduler.yaml;
-    #rm -rf ~/${PrometheusInstaller.INSTALL_HOME}/manifest/scheduler.yaml;
-    `;
-    await mainMaster.exeCmd();
-  }
-
   private _getRemoveScript(): string {
     return `
     cd ~/${PrometheusInstaller.INSTALL_HOME};
@@ -522,16 +322,6 @@ export default class PrometheusInstaller extends AbstractInstaller {
     rm -rf ~/${PrometheusInstaller.INSTALL_HOME};
     `;
   }
-
-  // private async _copyFile(callback: any) {
-  //   console.debug('@@@@@@ Start copy yaml file... @@@@@@');
-  //   const { mainMaster } = this.env.getNodesSortedByRole();
-  //   mainMaster.cmd = `
-  //   \\cp -r ~/${PrometheusInstaller.INSTALL_HOME}/yaml ~/${PrometheusInstaller.INSTALL_HOME};
-  //   `;
-  //   await mainMaster.exeCmd(callback);
-  //   console.debug('###### Finish copy yaml file... ######');
-  // }
 
   private _getImagePathEditScript(): string {
     // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)

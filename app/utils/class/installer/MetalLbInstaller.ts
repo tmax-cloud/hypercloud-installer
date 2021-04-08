@@ -192,9 +192,6 @@ export default class MetalLbInstaller extends AbstractInstaller {
   private async _installMainMaster(data: Array<string>, callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    // await this.setYaml(mainMaster, data);
-    // mainMaster.cmd = this._getInstallScript(data);
-    // await mainMaster.exeCmd(callback);
 
     // Step0. metallb.config 설정
     mainMaster.cmd = this._step0();
@@ -254,39 +251,7 @@ export default class MetalLbInstaller extends AbstractInstaller {
     console.debug('###### Finish remove main Master... ######');
   }
 
-  // private async setYaml(mainMaster: Node, data: Array<string>) {
-  //   // yaml파일이 config부분에 내용을 바꿔야 해서 객체형태로 수정 하지 못 함
-  //   const metallbCidrYamlObj = await common.getYamlObjectByYamlFilePath(
-  //     `~/${MetalLbInstaller.INSTALL_HOME}/metallb_cidr.yaml`,
-  //     mainMaster
-  //   );
-  //   console.error(metallbCidrYamlObj);
-  // }
-
-  // private _getInstallScript(data: Array<string>) {
-  //   return `
-  //     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-  //     sed -i 's/v0.9.3/'v${MetalLbInstaller.METALLB_VERSION}'/g' metallb_v${
-  //     MetalLbInstaller.METALLB_VERSION
-  //   }.yaml;
-  //     ${this._setMetalLbArea(data)}
-  //     kubectl apply -f metallb_namespace_v${
-  //       MetalLbInstaller.METALLB_VERSION
-  //     }.yaml;
-  //     kubectl apply -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-  //     kubectl create secret generic -n metallb-system memberlist --from-literal=secretkey="$(openssl rand -base64 128)"
-  //     kubectl apply -f metallb_cidr.yaml;
-  //     `;
-  // }
-
   private _getRemoveScript(): string {
-    // return `
-    // cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-    // kubectl delete -f metallb_cidr.yaml;
-    // kubectl delete -f metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-    // kubectl delete -f metallb_namespace_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-    // rm -rf ~/${MetalLbInstaller.INSTALL_HOME};
-    // `;
     return `
     cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
     ./install-metallb.sh uninstall;
@@ -311,19 +276,4 @@ export default class MetalLbInstaller extends AbstractInstaller {
     sed -i 's|\\r$||g' yaml/metallb_cidr.yaml;
     `;
   }
-
-  // private async _copyFile(callback: any) {
-  //   console.debug('@@@@@@ Start copy yaml file... @@@@@@');
-  //   const { mainMaster } = this.env.getNodesSortedByRole();
-  //   mainMaster.cmd = `
-  //   ${common.getCopyCommandByFilePath(
-  //     `~/${MetalLbInstaller.INSTALL_HOME}/metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml`
-  //   )}
-  //   ${common.getCopyCommandByFilePath(
-  //     `~/${MetalLbInstaller.INSTALL_HOME}/metallb_cidr.yaml`
-  //   )}
-  //   `;
-  //   await mainMaster.exeCmd(callback);
-  //   console.debug('###### Finish copy yaml file... ######');
-  // }
 }

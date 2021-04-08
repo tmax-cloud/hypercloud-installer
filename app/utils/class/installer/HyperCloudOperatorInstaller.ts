@@ -60,24 +60,6 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
     // ingress 설치
     if (state.isUseIngress) {
-      // if (state.sharedIngress) {
-      //   const IngressControllerInstaller =
-      //     IngressControllerInstaller.getInstance;
-      //   IngressControllerInstaller.env = this.env;
-      //   await IngressControllerInstaller.install({
-      //     callback,
-      //     setProgress
-      //   });
-      // }
-      // if (state.systemIngress) {
-      //   const ingressControllerSystemInstaller =
-      //     IngressControllerSystemInstaller.getInstance;
-      //   ingressControllerSystemInstaller.env = this.env;
-      //   await ingressControllerSystemInstaller.install({
-      //     callback,
-      //     setProgress
-      //   });
-      // }
       const ingressControllerInstaller = IngressControllerInstaller.getInstance;
       ingressControllerInstaller.env = this.env;
       await ingressControllerInstaller.install({
@@ -90,22 +72,9 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
     // operator 설치
     await this._installMainMaster(state, callback);
-
-    // secret watcher 설치
-    // const secretWatcherInstaller = SecretWatcherInstaller.getInstance;
-    // secretWatcherInstaller.env = this.env;
-    // await secretWatcherInstaller.install({
-    //   callback,
-    //   setProgress
-    // });
   }
 
   public async remove() {
-    // secret watcher 삭제
-    // const secretWatcherInstaller = SecretWatcherInstaller.getInstance;
-    // secretWatcherInstaller.env = this.env;
-    // await secretWatcherInstaller.remove();
-
     // operator 삭제
     await this._removeMainMaster();
 
@@ -261,26 +230,6 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
 
-    // // Step 2. CRD 적용
-    // mainMaster.cmd = this._step2();
-    // await mainMaster.exeCmd(callback);
-
-    // // Step 3. 2.mysql-settings.yaml 실행
-    // mainMaster.cmd = this._step3();
-    // await mainMaster.exeCmd(callback);
-
-    // // Step 4. 3.mysql-create.yaml 실행
-    // mainMaster.cmd = this._step4();
-    // await mainMaster.exeCmd(callback);
-
-    // // Step 5. 4.hypercloud4-operator.yaml 실행
-    // mainMaster.cmd = this._step5();
-    // await mainMaster.exeCmd(callback);
-
-    // // Step 6. 6.default-auth-object-init.yaml 실행
-    // mainMaster.cmd = this._step6(state);
-    // await mainMaster.exeCmd(callback);
-
     console.debug(
       '###### Finish installing hypercloud operator main Master... ######'
     );
@@ -320,78 +269,6 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     `;
   }
 
-  private _step2() {
-    return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UserCRD.yaml;
-    # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UsergroupCRD.yaml;
-    # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/TokenCRD.yaml;
-    # kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/ClientCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UserSecurityPolicyCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/NamespaceClaimCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/ResourceQuotaClaimCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/RoleBindingClaimCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Registry/RegistryCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Registry/ImageCRD.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/TemplateCRD_v1beta1.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/TemplateInstanceCRD_v1beta1.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/CatalogServiceClaimCRD_v1beta1.yaml;
-    `;
-  }
-
-  private _step3() {
-    return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/2.mysql-settings.yaml;
-    `;
-  }
-
-  private _step4() {
-    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;`;
-
-    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
-    if (process.env.RESOURCE === 'low') {
-      script += `
-      sed -i 's/memory: "5Gi"/memory: "500Mi"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
-      sed -i 's/cpu: "1"/cpu: "0.5"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
-      `;
-    }
-    script += `
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
-    `;
-
-    return script;
-  }
-
-  private _step5() {
-    let script = `cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;`;
-
-    // 개발 환경에서는 테스트 시, POD의 메모리를 조정하여 테스트
-    if (process.env.RESOURCE === 'low') {
-      script += `
-      sed -i 's/memory: "1Gi"/memory: "500Mi"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
-      sed -i 's/cpu: "1"/cpu: "0.5"/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
-      `;
-    }
-    script += `
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
-    `;
-
-    return script;
-  }
-
-  private _step6(state: any) {
-    // FIXME: targetEmail 값 변경 될 가능성 있음
-    const targetEmail = 'hc-admin@tmax.co.kr';
-    const newEmail = state.email;
-
-    return `
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    sed -i 's/${targetEmail}/${newEmail}/g' hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
-    kubectl apply -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
-    `;
-  }
-
   private async _removeMainMaster() {
     console.debug(
       '@@@@@@ Start remove hypercloud operator main Master... @@@@@@'
@@ -405,51 +282,11 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
   }
 
   private _getRemoveScript(): string {
-    // return `
-    // cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/6.default-auth-object-init.yaml;
-
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/4.hypercloud4-operator.yaml;
-
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/3.mysql-create.yaml;
-
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/2.mysql-settings.yaml;
-
-    // # kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UserCRD.yaml;
-    // # kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UsergroupCRD.yaml;
-    // # kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/TokenCRD.yaml;
-    // # kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/ClientCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Auth/UserSecurityPolicyCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/NamespaceClaimCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/ResourceQuotaClaimCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Claim/RoleBindingClaimCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Registry/RegistryCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Registry/ImageCRD.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/TemplateCRD_v1beta1.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/TemplateInstanceCRD_v1beta1.yaml;
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_CRD/${HyperCloudOperatorInstaller.HPCD_VERSION}/Template/CatalogServiceClaimCRD_v1beta1.yaml;
-
-    // kubectl delete -f hypercloud-operator-${HyperCloudOperatorInstaller.HPCD_VERSION}/_yaml_Install/1.initialization.yaml;
-
-    // rm -rf ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
-    // `;
     return `
     cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
     sudo chmod +x uninstall.sh;
     ./uninstall.sh;
     rm -rf ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
     `;
-  }
-
-  private async _downloadYaml() {
-    console.debug('@@@@@@ Start download yaml file from external... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = `
-    mkdir -p ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME}/manifest/hypercloud;
-    wget -O hypercloud-operator.tar.gz https://github.com/tmax-cloud/hypercloud-operator/archive/v${HyperCloudOperatorInstaller.HPCD_VERSION}.tar.gz;
-    `;
-    await mainMaster.exeCmd();
-    console.debug('###### Finish download yaml file from external... ######');
   }
 }

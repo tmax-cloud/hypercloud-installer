@@ -168,8 +168,6 @@ export default class GrafanaInstaller extends AbstractInstaller {
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
-    // mainMaster.cmd = this._getVersionEditScript();
-    // await mainMaster.exeCmd(callback);
 
     // Step 0. Grafana Config 설정
     mainMaster.cmd = this._step0();
@@ -178,11 +176,6 @@ export default class GrafanaInstaller extends AbstractInstaller {
     // Step 1. installer 실행
     mainMaster.cmd = this._step1();
     await mainMaster.exeCmd(callback);
-
-    // Step 1. Prometheus 확인
-    // Step 2. Grafana deploy
-    // mainMaster.cmd = this._step2();
-    // await mainMaster.exeCmd(callback);
 
     console.debug('###### Finish installing main Master... ######');
   }
@@ -218,20 +211,6 @@ export default class GrafanaInstaller extends AbstractInstaller {
       sudo chmod +x install.sh;
       ./install.sh;
       `;
-  }
-
-  private _getVersionEditScript(): string {
-    return `
-      cd ~/${GrafanaInstaller.INSTALL_HOME}/yaml/;
-      sed -i 's/{GRAFANA_VERSION}/'${GrafanaInstaller.GRAFANA_VERSION}'/g' grafana.yaml
-      `;
-  }
-
-  private _step2(): string {
-    return `
-    cd ~/${GrafanaInstaller.INSTALL_HOME};
-    kubectl create -f yaml/;
-    `;
   }
 
   private _getRemoveScript(): string {

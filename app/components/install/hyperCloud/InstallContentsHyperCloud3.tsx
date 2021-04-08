@@ -15,7 +15,6 @@ import * as env from '../../../utils/common/env';
 import CONST from '../../../utils/constants/constant';
 import HyperCloudOperatorInstaller from '../../../utils/class/installer/HyperCloudOperatorInstaller';
 import HyperCloudConsoleInstaller from '../../../utils/class/installer/HyperCloudConsoleInstaller';
-import HyperCloudWebhookInstaller from '../../../utils/class/installer/HyperCloudWebhookInstaller';
 import HyperAuthInstaller from '../../../utils/class/installer/HyperAuthInstaller';
 import TemplateSeviceBrokerInstaller from '../../../utils/class/installer/TemplateSeviceBrokerInstaller';
 import { AppContext } from '../../../containers/AppContext';
@@ -78,9 +77,6 @@ function InstallContentsHyperCloud3(props: any) {
     const hyperCloudOperatorInstaller = HyperCloudOperatorInstaller.getInstance;
     hyperCloudOperatorInstaller.env = nowEnv;
 
-    const hyperCloudWebhookInstaller = HyperCloudWebhookInstaller.getInstance;
-    hyperCloudWebhookInstaller.env = nowEnv;
-
     const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
     hyperCloudConsoleInstaller.env = nowEnv;
 
@@ -99,13 +95,6 @@ function InstallContentsHyperCloud3(props: any) {
         setProgress
       });
       setProgress(20);
-
-      // // webhook install
-      // await hyperCloudWebhookInstaller.install({
-      //   callback,
-      //   setProgress
-      // });
-      // setProgress(40);
 
       // console install
       await hyperCloudConsoleInstaller.install({
@@ -136,9 +125,7 @@ function InstallContentsHyperCloud3(props: any) {
 
       await templateSeviceBrokerInstaller.remove();
       await hyperCloudConsoleInstaller.remove();
-      // await hyperCloudWebhookInstaller.remove();
       await hyperCloudOperatorInstaller.remove();
-      // await hyperCloudWebhookInstaller.rollbackApiServerYaml();
     } finally {
       console.log();
     }
