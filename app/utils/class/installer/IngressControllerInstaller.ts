@@ -272,19 +272,4 @@ export default class IngressControllerInstaller extends AbstractInstaller {
 
     `;
   }
-
-  // private async _downloadYaml() {
-  //   console.debug('@@@@@@ START download yaml file from external... @@@@@@');
-  //   const { mainMaster } = this.env.getNodesSortedByRole();
-  //   mainMaster.cmd = `
-  //   mkdir -p ~/${IngressControllerInstaller.INSTALL_HOME}/shared/yaml;
-  //   cd ~/${IngressControllerInstaller.INSTALL_HOME}/shared/yaml;
-  //   wget https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/IngressNginx/shared/yaml/shared.yaml;
-  //   mkdir -p ~/${IngressControllerInstaller.INSTALL_HOME}/system/yaml;
-  //   cd ~/${IngressControllerInstaller.INSTALL_HOME}/system/yaml;
-  //   wget https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/IngressNginx/system/yaml/shared.yaml
-  //   `;
-  //   await mainMaster.exeCmd();
-  //   console.debug('###### FINISH download yaml file from external... ######');
-  // }
 }

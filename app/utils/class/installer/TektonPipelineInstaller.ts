@@ -13,7 +13,13 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${TektonPipelineInstaller.INSTALL_HOME}/image`;
 
-  // TODO: version 처리 안됨
+  public static readonly PIPELINE_VERSION = `v0.22.0`;
+
+  public static readonly TRIGGER_VERSION = `v0.12.1`;
+
+  public static readonly OPERATOR_VERSION = `v0.2.2`;
+
+  // FIXME: 4버전에서 사용하던 변수. 추후 삭제
   public static readonly VERSION = `0.12.1`;
 
   // singleton
@@ -238,34 +244,31 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
   }
 
   private _step0() {
+    // XXX: sed 부분 주석 처리, config 파일에 적힌 내용 sed하지 않음
     let script = `
     cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
     sudo sed -i 's|\\r$||g' cicd.config;
     . cicd.config;
+
+    # sudo sed -i "s|$pipelineVersion|v${TektonPipelineInstaller.PIPELINE_VERSION}|g" ./cicd.config;
+    # sudo sed -i "s|$triggerVersion|v${TektonPipelineInstaller.TRIGGER_VERSION}|g" ./cicd.config;
+    # sudo sed -i "s|$operatorVersion|v${TektonPipelineInstaller.OPERATOR_VERSION}|g" ./cicd.config;
+
   `;
 
     if (this.env.registry) {
-      script += `sudo sed -i "s|$imageRegistry|${this.env.registry}|g" . cicd.config;`;
+      script += `sudo sed -i "s|$imageRegistry|${this.env.registry}|g" ./cicd.config;`;
     } else {
-      script += `sudo sed -i "s|$imageRegistry||g" . cicd.config;`;
+      script += `sudo sed -i "s|$imageRegistry||g" ./cicd.config;`;
     }
 
     return script;
   }
 
   private _step1() {
-    // if (this.env.registry) {
-    //   return `
-    //   cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    //   kubectl apply -f updated.yaml;
-    //   `;
-    // }
-    // return `
-    // cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    // kubectl apply -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml;
-    // `;
     let script = `
     cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
+    sudo chmod +x installer.sh;
     `;
 
     if (this.env.registry) {
@@ -288,34 +291,12 @@ export default class TektonPipelineInstaller extends AbstractInstaller {
   }
 
   private _getRemoveScript(): string {
-    // if (this.env.registry) {
-    //   return `
-    //   cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    //   kubectl delete -f updated.yaml;
-    //   rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
-    //   `;
-    // }
-    // return `
-    // cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    // kubectl delete -f https://raw.githubusercontent.com/tmax-cloud/install-tekton/4.1/manifest/tekton-pipeline-v0.12.1.yaml
-    // `;
     return `
       cd ~/${TektonPipelineInstaller.INSTALL_HOME}/manifest;
+      sudo chmod +x installer.sh;
       ./installer.sh uninstall;
       rm -rf ~/${TektonPipelineInstaller.INSTALL_HOME};
     `;
-  }
-
-  private async _downloadYaml() {
-    console.debug('@@@@@@ Start download yaml file from external... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = `
-    mkdir -p ~/${TektonPipelineInstaller.INSTALL_HOME};
-    cd ~/${TektonPipelineInstaller.INSTALL_HOME};
-    wget https://storage.googleapis.com/tekton-releases/pipeline/previous/v0.12.1/release.yaml -O tekton-pipeline-v0.12.1.yaml;
-    `;
-    await mainMaster.exeCmd();
-    console.debug('###### Finish download yaml file from external... ######');
   }
 
   private _getImagePathEditScript(): string {

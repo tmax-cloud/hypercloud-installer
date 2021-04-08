@@ -271,21 +271,6 @@ export default class CniInstaller extends AbstractInstaller {
     `;
   }
 
-  // private async _copyFile(callback: any) {
-  //   console.debug('@@@@@@ Start copy yaml file... @@@@@@');
-  //   const { mainMaster } = this.env.getNodesSortedByRole();
-  //   mainMaster.cmd = `
-  //   ${common.getCopyCommandByFilePath(
-  //     `~/${CniInstaller.INSTALL_HOME}/calico_v${CniInstaller.CNI_VERSION}.yaml`
-  //   )}
-  //   ${common.getCopyCommandByFilePath(
-  //     `~/${CniInstaller.INSTALL_HOME}/calicoctl_v${CniInstaller.CTL_VERSION}.yaml`
-  //   )}
-  //   `;
-  //   await mainMaster.exeCmd(callback);
-  //   console.debug('###### Finish copy yaml file... ######');
-  // }
-
   private _getImagePathEditScript(): string {
     // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
     return `

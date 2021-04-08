@@ -17,11 +17,7 @@ import productImage from '../../../../resources/assets/Tekton_logo.png';
 import FinishImage from '../../../../resources/assets/img_finish_blue.svg';
 import * as env from '../../../utils/common/env';
 import routes from '../../../utils/constants/routes.json';
-import TektonApprovalInstaller from '../../../utils/class/installer/TektonApprovalInstaller';
-import TektonCiCdTemplatesInstaller from '../../../utils/class/installer/TektonCiCdTemplatesInstaller';
-import TektonMailNotifierInstaller from '../../../utils/class/installer/TektonMailNotifierInstaller';
 import TektonPipelineInstaller from '../../../utils/class/installer/TektonPipelineInstaller';
-import TektonTriggerInstaller from '../../../utils/class/installer/TektonTriggerInstaller';
 
 function InstallContentsTektonAlready(props: any) {
   console.debug(InstallContentsTektonAlready.name, props);
@@ -54,23 +50,8 @@ function InstallContentsTektonAlready(props: any) {
     console.debug(`nowEnv`, nowEnv);
 
     const tektonPipelineInstaller = TektonPipelineInstaller.getInstance;
-    const tektonTriggerInstaller = TektonTriggerInstaller.getInstance;
-    const tektonApprovalInstaller = TektonApprovalInstaller.getInstance;
-    const tektonMailNotifierInstaller = TektonMailNotifierInstaller.getInstance;
-    const tektonCiCdTemplatesInstaller =
-      TektonCiCdTemplatesInstaller.getInstance;
 
     tektonPipelineInstaller.env = nowEnv;
-    tektonTriggerInstaller.env = nowEnv;
-    tektonApprovalInstaller.env = nowEnv;
-    tektonMailNotifierInstaller.env = nowEnv;
-    tektonCiCdTemplatesInstaller.env = nowEnv;
-
-    // 설치 역순
-    await tektonCiCdTemplatesInstaller.remove();
-    await tektonMailNotifierInstaller.remove();
-    await tektonApprovalInstaller.remove();
-    await tektonTriggerInstaller.remove();
     await tektonPipelineInstaller.remove();
   };
 
