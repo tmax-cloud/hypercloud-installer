@@ -37,7 +37,7 @@ function InstallContentsHyperCloud3(props: any) {
     nowEnv.addProduct({
       name: CONST.PRODUCT.HYPERCLOUD.NAME,
       operator_version: state.operator_version,
-      webhook_version: state.webhook_version,
+      // webhook_version: state.webhook_version,
       console_version: state.console_version,
       isUseIngress: state.isUseIngress,
       sharedIngress: state.sharedIngress,

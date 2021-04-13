@@ -41,7 +41,7 @@ function InstallContentsHyperCloud2(props: any) {
           </span>
         </div>
       </div>
-      <div className={['childLeftRightLeft'].join(' ')}>
+      {/* <div className={['childLeftRightLeft'].join(' ')}>
         <div className={[styles.titleBox].join(' ')}>
           <span className={['medium'].join(' ')}>Webhook Version</span>
         </div>
@@ -50,7 +50,7 @@ function InstallContentsHyperCloud2(props: any) {
             {state.webhook_version}
           </span>
         </div>
-      </div>
+      </div> */}
       <div className={['childLeftRightLeft'].join(' ')}>
         <div className={[styles.titleBox].join(' ')}>
           <span className={['medium'].join(' ')}>Console Version</span>
@@ -111,8 +111,8 @@ function InstallContentsHyperCloud2(props: any) {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               <span className={['lightDark', 'small'].join(' ')}>
-                {CONST.PRODUCT.HYPERCLOUD.NAME} 설정 화면에서 나가시겠습니까? 설정
-                내용은 저장되지 않습니다.
+                {CONST.PRODUCT.HYPERCLOUD.NAME} 설정 화면에서 나가시겠습니까?
+                설정 내용은 저장되지 않습니다.
               </span>
             </DialogContentText>
           </DialogContent>

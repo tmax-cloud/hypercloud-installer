@@ -265,9 +265,7 @@ export default class HyperAuthInstaller extends AbstractInstaller {
       cd ~/${HyperAuthInstaller.INSTALL_HOME}/manifest;
       sudo sed -i 's|\\r$||g' hyperauth.config;
       . hyperauth.config;
-
-      sudo sed -i "s|$POSTGRES_VERSION|${HyperAuthInstaller.POSTGRES_VERSION}|g" ./hyperauth.config;
-      sudo sed -i "s|$HYPERAUTH_SERVER_VERSION|${HyperAuthInstaller.HYPERAUTH_SERVER_VERSION}|g" ./hyperauth.config;
+       sudo sed -i "s|$HYPERAUTH_SERVER_VERSION|${HyperAuthInstaller.HYPERAUTH_SERVER_VERSION}|g" ./hyperauth.config;
       sudo sed -i "s|$KAFKA_VERSION|${HyperAuthInstaller.KAFKA_VERSION}|g" ./hyperauth.config;
       sudo sed -i "s|$ZOOKEEPER_VERSION|${HyperAuthInstaller.ZOOKEEPER_VERSION}|g" ./hyperauth.config;
       sudo sed -i "s|$HYPERAUTH_LOG_COLLECTOR_VERSION|${HyperAuthInstaller.HYPERAUTH_LOG_COLLECTOR_VERSION}|g" ./hyperauth.config;

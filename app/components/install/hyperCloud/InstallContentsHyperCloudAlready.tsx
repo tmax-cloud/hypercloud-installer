@@ -157,7 +157,7 @@ function InstallContentsHyperCloudAlready(props: any) {
               </span>
             </div>
           </div>
-          <div>
+          {/* <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>
                 Webhook Version
@@ -168,7 +168,7 @@ function InstallContentsHyperCloudAlready(props: any) {
                 {product.webhook_version}
               </span>
             </div>
-          </div>
+          </div> */}
           <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>
@@ -265,10 +265,8 @@ function InstallContentsHyperCloudAlready(props: any) {
               <DialogContent>
                 <DialogContentText id="alert-dialog-description">
                   <span className={['lightDark', 'small'].join(' ')}>
-                    {CONST.PRODUCT.HYPERCLOUD.NAME}
-{' '}
-를 삭제하시겠습니까?
-</span>
+                    {CONST.PRODUCT.HYPERCLOUD.NAME} 를 삭제하시겠습니까?
+                  </span>
                 </DialogContentText>
               </DialogContent>
               <DialogActions>
