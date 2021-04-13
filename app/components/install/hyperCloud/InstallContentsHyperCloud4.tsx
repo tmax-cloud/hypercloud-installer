@@ -58,7 +58,7 @@ function InstallContentsHyperCloud4(props: any) {
             </span>
           </div>
         </div>
-        <div style={{ marginBottom: '30px' }}>
+        {/* <div style={{ marginBottom: '30px' }}>
           <div>
             <span className={['medium', 'thick'].join(' ')}>
               Webhook Version
@@ -69,7 +69,7 @@ function InstallContentsHyperCloud4(props: any) {
               {state.webhook_version}
             </span>
           </div>
-        </div>
+        </div> */}
         <div style={{ marginBottom: '30px' }}>
           <div>
             <span className={['medium', 'thick'].join(' ')}>

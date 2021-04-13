@@ -14,7 +14,7 @@ function InstallContentsHyperAuth(props: any) {
   const { history, location, match } = props;
 
   const [state, setState] = useState({
-    version: HyperAuthInstaller.HYPERAUTH_VERSION
+    version: HyperAuthInstaller.HYPERAUTH_SERVER_VERSION
   });
 
   return (
