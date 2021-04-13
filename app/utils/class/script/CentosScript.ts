@@ -138,7 +138,7 @@ EOF
     jq -V;
 
     # yq
-    wget https://github.com/mikefarah/yq/releases/download/v4.4.1/yq_linux_amd64 -O /usr/bin/yq &&\\
+    wget https://github.com/mikefarah/yq/releases/download/v4.6.3/yq_linux_amd64 -O /usr/bin/yq &&\\
     chmod +x /usr/bin/yq
 
     # sshpass

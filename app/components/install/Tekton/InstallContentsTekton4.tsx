@@ -58,7 +58,7 @@ function InstallContentsTekton4(props: any) {
             </span>
           </div>
         </div>
-        <div style={{ marginBottom: '30px' }}>
+        {/* <div style={{ marginBottom: '30px' }}>
           <div>
             <span className={['medium', 'thick'].join(' ')}>
               Approval Version
@@ -81,7 +81,7 @@ function InstallContentsTekton4(props: any) {
               {state.mailNotifier_version}
             </span>
           </div>
-        </div>
+        </div> */}
         <div style={{ marginBottom: '30px' }}>
           <div>
             <span className={['medium', 'thick'].join(' ')}>

@@ -55,7 +55,7 @@ function InstallContentsTekton2(props: any) {
           </span>
         </div>
       </div>
-      <div className={['childLeftRightLeft'].join(' ')}>
+      {/* <div className={['childLeftRightLeft'].join(' ')}>
         <div className={[styles.titleBox].join(' ')}>
           <span className={['medium'].join(' ')}>Approval Version</span>
         </div>
@@ -74,7 +74,7 @@ function InstallContentsTekton2(props: any) {
             {state.mailNotifier_version}
           </span>
         </div>
-      </div>
+      </div> */}
       <div className={['childLeftRightLeft'].join(' ')}>
         <div className={[styles.titleBox].join(' ')}>
           <span className={['medium'].join(' ')}>CI/CD Templates Version</span>

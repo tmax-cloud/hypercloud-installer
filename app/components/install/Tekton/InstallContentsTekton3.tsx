@@ -35,8 +35,8 @@ function InstallContentsTekton3(props: any) {
       name: CONST.PRODUCT.TEKTON.NAME,
       pipeline_version: state.pipeline_version,
       trigger_version: state.trigger_version,
-      approval_version: state.approval_version,
-      mailNotifier_version: state.mailNotifier_version,
+      // approval_version: state.approval_version,
+      // mailNotifier_version: state.mailNotifier_version,
       cicdTemplates_version: state.cicdTemplates_version
     });
     // json 파일 저장
