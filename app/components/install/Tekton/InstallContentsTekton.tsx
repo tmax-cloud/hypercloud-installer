@@ -14,7 +14,9 @@ function InstallContentsTekton(props: any) {
   const { history, location, match } = props;
 
   const [state, setState] = useState({
-    pipeline_version: TektonPipelineInstaller.VERSION
+    pipeline_version: TektonPipelineInstaller.PIPELINE_VERSION,
+    trigger_version: TektonPipelineInstaller.TRIGGER_VERSION,
+    cicdTemplates_version: TektonPipelineInstaller.OPERATOR_VERSION
   });
 
   return (

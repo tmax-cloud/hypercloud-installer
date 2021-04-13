@@ -115,7 +115,7 @@ function InstallContentsTektonAlready(props: any) {
               </span>
             </div>
           </div>
-          <div>
+          {/* <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>
                 Approval Version
@@ -126,8 +126,8 @@ function InstallContentsTektonAlready(props: any) {
                 {nowEnv.isInstalled(nowProduct.NAME).approval_version}
               </span>
             </div>
-          </div>
-          <div>
+          </div> */}
+          {/* <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>
                 Mail-notifier Version
@@ -138,7 +138,7 @@ function InstallContentsTektonAlready(props: any) {
                 {nowEnv.isInstalled(nowProduct.NAME).mailNotifier_version}
               </span>
             </div>
-          </div>
+          </div> */}
           <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>

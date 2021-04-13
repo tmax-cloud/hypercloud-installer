@@ -206,7 +206,7 @@ function InstallContentsHyperCloudAlready(props: any) {
               <a
                 onClick={async () => {
                   const { mainMaster } = nowEnv.getNodesSortedByRole();
-                  mainMaster.cmd = `kubectl get svc -n console-system -o jsonpath='{.items[?(@.metadata.name=="console-system")].status.loadBalancer.ingress[0].ip}'`;
+                  mainMaster.cmd = `kubectl get svc -n console-system -o jsonpath='{.items[?(@.metadata.name=="console")].status.loadBalancer.ingress[0].ip}'`;
                   let ip;
                   await mainMaster.exeCmd({
                     close: () => {},
@@ -265,8 +265,10 @@ function InstallContentsHyperCloudAlready(props: any) {
               <DialogContent>
                 <DialogContentText id="alert-dialog-description">
                   <span className={['lightDark', 'small'].join(' ')}>
-                    {CONST.PRODUCT.HYPERCLOUD.NAME} 를 삭제하시겠습니까?
-                  </span>
+                    {CONST.PRODUCT.HYPERCLOUD.NAME}
+{' '}
+를 삭제하시겠습니까?
+</span>
                 </DialogContentText>
               </DialogContent>
               <DialogActions>
