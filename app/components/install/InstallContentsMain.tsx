@@ -8,7 +8,7 @@ import styles from './InstallContentsMain.css';
 import CONST from '../../utils/constants/constant';
 import * as env from '../../utils/common/env';
 import * as product from '../../utils/common/product';
-import CloudImage from '../../../resources/assets/ic_logo_hypercloud_blue.svg';
+import CloudImage from '../../../resources/assets/ic_logo_hypercloud_mint.svg';
 import KubernetesImage from '../../../resources/assets/Kubernetes_logo.png';
 import CniImage from '../../../resources/assets/cni_logo.png';
 import MetalLbImage from '../../../resources/assets/MetalLb_logo.png';
@@ -17,7 +17,7 @@ import PrometheusImage from '../../../resources/assets/Prometheus_logo.png';
 import HyperCloudOperatorImage from '../../../resources/assets/HyperCloud Operator_logo.png';
 import HyperCloudImage from '../../../resources/assets/HyperCloud_logo.png';
 import TektonImage from '../../../resources/assets/Tekton_logo.png';
-import InstalledImage from '../../../resources/assets/ic_finish_blue.svg';
+import InstalledImage from '../../../resources/assets/ic_finish_mint.svg';
 
 const useStyles = makeStyles(() =>
   createStyles({

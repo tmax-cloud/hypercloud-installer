@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@material-ui/core';
 import styles from '../InstallContents4.css';
 import * as env from '../../../utils/common/env';
-import FinishImage from '../../../../resources/assets/img_finish_blue.svg';
+import FinishImage from '../../../../resources/assets/img_finish_mint.svg';
 import routes from '../../../utils/constants/routes.json';
 
 function InstallContentsCni4(props: any) {

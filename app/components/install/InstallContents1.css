@@ -21,7 +21,7 @@
 .installedCircle {
   position: relative;
   /* border: 4px solid #0992AC !important; */
-  border: 4px solid var(--global-color-secondary) !important;
+  border: 4px solid var(--global-color-primary) !important;
   width: 300px !important;
   height: 300px !important;
 }

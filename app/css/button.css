@@ -28,13 +28,16 @@ button.primary:active {
 
 button.secondary {
   background-color: var(--global-color-secondary-active);
-  color: var(--global-color-white);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
 }
 button.secondary:hover {
   background-color: var(--global-color-secondary-active);
-  color: var(--global-color-white);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
 }
 button.secondary:active {
   background-color: var(--global-color-secondary-active);
-  color: var(--global-color-white);
+  color: var(--global-color-gray);
+  border: 1px solid var(--global-color-gray);
 }
