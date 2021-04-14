@@ -20,7 +20,7 @@ import styles from './InstallLnb.css';
 import CONST from '../../utils/constants/constant';
 import * as env from '../../utils/common/env';
 import routes from '../../utils/constants/routes.json';
-import InstalledImage from '../../../resources/assets/ic_finish_blue.svg';
+import InstalledImage from '../../../resources/assets/ic_finish_mint.svg';
 import Installing from '../../../resources/assets/installing.gif';
 import * as product from '../../utils/common/product';
 import { AppContext } from '../../containers/AppContext';

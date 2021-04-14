@@ -4,7 +4,7 @@ title bar
 /* title bar 설정*/
 .titlebar {
   background-color: var(--global-background-color) !important;
-  background-image: url('../../resources/assets/lnb_logo_bg_blue.svg');
+  background-image: url('../../resources/assets/lnb_logo_bg_mint.svg');
   background-repeat: no-repeat;
   height: 60px !important;
   position: relative !important;
