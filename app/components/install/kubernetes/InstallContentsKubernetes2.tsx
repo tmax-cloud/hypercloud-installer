@@ -170,7 +170,7 @@ function InstallContentsKubernetes2(props: any) {
             className={['medium'].join(' ')}
             id="outlined-required"
             // label="Name"
-            placeholder="10.0.0.0"
+            placeholder="10.244.0.0"
             variant="outlined"
             size="small"
             value={ip}
@@ -281,11 +281,9 @@ function InstallContentsKubernetes2(props: any) {
           <DialogContent>
             <DialogContentText id="alert-dialog-description">
               <span className={['lightDark', 'small'].join(' ')}>
-                {CONST.PRODUCT.KUBERNETES.NAME}
-{' '}
-설정 화면에서 나가시겠습니까?
+                {CONST.PRODUCT.KUBERNETES.NAME} 설정 화면에서 나가시겠습니까?
                 설정 내용은 저장되지 않습니다.
-</span>
+              </span>
             </DialogContentText>
           </DialogContent>
           <DialogActions>

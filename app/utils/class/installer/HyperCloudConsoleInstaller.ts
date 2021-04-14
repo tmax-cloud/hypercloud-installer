@@ -13,7 +13,7 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
 
   public static readonly IMAGE_HOME = `${HyperCloudConsoleInstaller.INSTALL_HOME}/image`;
 
-  public static readonly CONSOLE_VERSION = `4.1.4.23`;
+  public static readonly CONSOLE_VERSION = `4.1.4.25`;
 
   public static readonly CONSOLE_NAMESPACE = `console-system`;
 
@@ -276,7 +276,8 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     export HYPERAUTH_EXTERNAL_IP=\${HYPERAUTH_EXTERNAL_IP:-0.0.0.0}
     sed -i 's/@@KEYCLOAK@@/'\${HYPERAUTH_EXTERNAL_IP}'/g' 3.deployment.yaml;
 
-    sed -i 's/@@CLIENTID@@/hypercloud4/g' 3.deployment.yaml;
+    sed -i 's/@@CLIENTID@@/hypercloud4/g' 3.deployment.yaml
+    sed -i 's/@@HIDDEN@@/false/g' 3.deployment.yaml;
     `;
 
     if (HyperCloudConsoleInstaller.HCDC_MODE) {

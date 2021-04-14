@@ -1,3 +1,17 @@
+# v4.1.13 (2020.04.14)
+
+### Features
+
+-
+
+### Fixes
+
+- Console version up (4.1.4.23 -> 4.1.4.25) (IMS: 257098)
+  - @@HIDDEN@@ flag 'false' 로 설정
+- Kubernetes 설치 시, POD network 힌트 메시지 수정 (IMS: 255339)
+
+---
+
 # v4.1.12 (2020.02.24)
 
 ### Features
