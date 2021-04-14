@@ -641,14 +641,14 @@ export default class KubernetesInstaller extends AbstractInstaller {
       // main master를 제외한 노드를 ntp client로 설정하기 위함
       let script = ScriptFactory.createScript(mainMaster.os.type);
       mainMaster.cmd = script.installChrony();
-      mainMaster.cmd += AbstractScript.setNtpServer();
+      mainMaster.cmd += AbstractScript.setChronyServer();
       await mainMaster.exeCmd(callback);
       workerArr.concat(masterArr);
       await Promise.all(
         workerArr.map(worker => {
           script = ScriptFactory.createScript(worker.os.type);
           worker.cmd = script.installChrony();
-          worker.cmd += AbstractScript.setNtpClient(mainMaster.ip);
+          worker.cmd += AbstractScript.setChronyClient(mainMaster.ip);
           return worker.exeCmd(callback);
         })
       );
@@ -658,7 +658,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
         this.env.nodeList.map((node: Node) => {
           const script = ScriptFactory.createScript(node.os.type);
           node.cmd = script.installChrony();
-          node.cmd += AbstractScript.setPublicNtp();
+          node.cmd += AbstractScript.setPublicChrony();
           return node.exeCmd(callback);
         })
       );
