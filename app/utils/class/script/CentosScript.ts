@@ -120,10 +120,10 @@ EOF
 
   cloneGitFile(repoPath: string, repoBranch = 'master') {
     return `
-    yum install -y git;
-    mkdir -p ~/${Env.INSTALL_ROOT};
-    cd ~/${Env.INSTALL_ROOT};
-    git clone -b ${repoBranch} ${repoPath};
+    sudo yum install -y git;
+    sudo mkdir -p ~/${Env.INSTALL_ROOT};
+    sudo cd ~/${Env.INSTALL_ROOT};
+    sudo git clone -b ${repoBranch} ${repoPath};
     `;
   }
 
@@ -135,44 +135,51 @@ EOF
     # jq
     sudo curl -L https://github.com/stedolan/jq/releases/download/jq-1.6/jq-linux64 -o /usr/local/bin/jq;
     sudo chmod a+x /usr/local/bin/jq;
-    jq -V;
+    sudo jq -V;
 
     # yq
     wget https://github.com/mikefarah/yq/releases/download/v4.6.3/yq_linux_amd64 -O /usr/bin/yq &&\\
-    chmod +x /usr/bin/yq
+    sudo chmod +x /usr/bin/yq
 
     # sshpass
     sudo yum install -y http://mirror.centos.org/centos/7/extras/x86_64/Packages/sshpass-1.06-2.el7.x86_64.rpm;
 
     # hyperauth 인증 키 생성 관련
-    yum install -y openssl
-    yum install -y java-1.8.0-openjdk-devel.x86_64
+    sudo yum install -y openssl
+    sudo yum install -y java-1.8.0-openjdk-devel.x86_64
     #apt install -y openssl
     #apt install -y oracle-java8-installer
 
 
     # epel pacakge repo 설치
     # crio에서 fuse-overlayfs 패키지가 필요한대, epel에 있음
-    yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm;
+    sudo yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm;
     `;
   }
 
   installLvm2(): string {
     return `
-    yum install -y lvm2;
+    sudo yum install -y lvm2;
     `;
   }
 
   installNtp(): string {
     return `
-    yum install -y ntp;
+    sudo yum install -y ntp;
+    `;
+  }
+
+  installChrony(): string {
+    return `
+    sudo yum remove -y ntp;
+    sudo yum install -y chrony;
     `;
   }
 
   installOpenSSL(): string {
     return `
-    yum install -y openssl;
-    yum install -y java-1.8.0-openjdk-devel.x86_64;
+    sudo yum install -y openssl;
+    sudo yum install -y java-1.8.0-openjdk-devel.x86_64;
     `;
   }
 

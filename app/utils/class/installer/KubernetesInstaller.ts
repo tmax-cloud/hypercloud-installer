@@ -593,7 +593,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
   private async _envSetting(param: { registry?: string; callback: any }) {
     console.debug('@@@@@@ Start env setting... @@@@@@');
     const { registry, callback } = param;
-    await this._setNtp(callback);
+    await this._setTimeSyncPackage(callback);
     await this._setLvm2(callback);
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       // internal network 경우 해주어야 할 작업들
@@ -627,7 +627,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
     );
   }
 
-  private async _setNtp(callback: any) {
+  private async _setTimeSyncPackage(callback: any) {
     console.debug('@@@@@@ Start setting ntp... @@@@@@');
     const {
       mainMaster,
@@ -640,14 +640,14 @@ export default class KubernetesInstaller extends AbstractInstaller {
       // main master를 ntp 서버로
       // main master를 제외한 노드를 ntp client로 설정하기 위함
       let script = ScriptFactory.createScript(mainMaster.os.type);
-      mainMaster.cmd = script.installNtp();
+      mainMaster.cmd = script.installChrony();
       mainMaster.cmd += AbstractScript.setNtpServer();
       await mainMaster.exeCmd(callback);
       workerArr.concat(masterArr);
       await Promise.all(
         workerArr.map(worker => {
           script = ScriptFactory.createScript(worker.os.type);
-          worker.cmd = script.installNtp();
+          worker.cmd = script.installChrony();
           worker.cmd += AbstractScript.setNtpClient(mainMaster.ip);
           return worker.exeCmd(callback);
         })
@@ -657,7 +657,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
       await Promise.all(
         this.env.nodeList.map((node: Node) => {
           const script = ScriptFactory.createScript(node.os.type);
-          node.cmd = script.installNtp();
+          node.cmd = script.installChrony();
           node.cmd += AbstractScript.setPublicNtp();
           return node.exeCmd(callback);
         })

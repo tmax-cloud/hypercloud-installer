@@ -105,29 +105,59 @@ export default abstract class AbstractScript {
   `;
   }
 
-  static startNtp(): string {
+  // static startNtp(): string {
+  //   return `
+  //   systemctl start ntpd;
+  //   systemctl enable ntpd;
+  //   ntpq -p;
+  //   `;
+  // }
+
+  static startChrony(): string {
     return `
-    systemctl start ntpd;
-    systemctl enable ntpd;
-    ntpq -p;
+    sudo sudo systemctl restart chronyd;
+    sudo timedatectl;
+    sudo chronyc sources -v;
     `;
   }
 
-  static setNtpClient(mainMasterIp: string): string {
+  // static setNtpClient(mainMasterIp: string): string {
+  //   return `
+  //   echo -e "server ${mainMasterIp}" > /etc/ntp.conf;
+  //   ${this.startNtp()}
+  //   `;
+  // }
+
+  static setChronyClient(mainMasterIp: string): string {
     return `
-    echo -e "server ${mainMasterIp}" > /etc/ntp.conf;
-    ${this.startNtp()}
+    sudo echo -e "server ${mainMasterIp} iburst" > /etc/chrony.conf;
+    sudo firewall-cmd --permanent --zone=public --add-port=123/udp;
+    ${this.startChrony()}
     `;
   }
 
-  static setNtpServer(): string {
+  // static setNtpServer(): string {
+  //   return `
+  //   interfaceName=\`ip -o -4 route show to default | awk '{print $5}'\`;
+  //   inets=(\`ip -f inet addr show \${interfaceName} | awk '/inet /{ print $2}'\`);
+  //   inet=\${inets[0]}
+  //   network=\`ipcalc -n \${inet} | cut -d"=" -f2\`;
+  //   netmask=\`ipcalc -m \${inet} | cut -d"=" -f2\`;
+  //   echo -e "restrict \${network} mask \${netmask} nomodify notrap\nserver 127.127.1.0 # local clock" > /etc/ntp.conf;
+  //   ${this.startNtp()}
+  //   `;
+  // }
+
+  static setChronyServer(): string {
     return `
     interfaceName=\`ip -o -4 route show to default | awk '{print $5}'\`;
-    inet=\`ip -f inet addr show \${interfaceName} | awk '/inet /{ print $2}'\`;
+    inets=(\`ip -f inet addr show \${interfaceName} | awk '/inet /{ print $2}'\`);
+    inet=\${inets[0]}
     network=\`ipcalc -n \${inet} | cut -d"=" -f2\`;
     netmask=\`ipcalc -m \${inet} | cut -d"=" -f2\`;
-    echo -e "restrict \${network} mask \${netmask} nomodify notrap\nserver 127.127.1.0 # local clock" > /etc/ntp.conf;
-    ${this.startNtp()}
+    sudo echo -e "allow \${inet}\nlocal stratum 3" > /etc/chrony.conf;
+    sudo sudo firewall-cmd --permanent --zone=public --add-port=123/udp;
+    ${this.startChrony()}
     `;
   }
 
@@ -135,10 +165,17 @@ export default abstract class AbstractScript {
     return `sudo kubeadm init --config=\${yaml_dir}/kubeadm-config.yaml --upload-certs`;
   }
 
-  static setPublicNtp(): string {
+  // static setPublicNtp(): string {
+  //   return `
+  //   echo -e "server 1.kr.pool.ntp.org\nserver 0.asia.pool.ntp.org\nserver 2.asia.pool.ntp.org" > /etc/ntp.conf;
+  //   ${this.startNtp()}
+  //   `;
+  // }
+
+  static setPublicChrony(): string {
     return `
-    echo -e "server 1.kr.pool.ntp.org\nserver 0.asia.pool.ntp.org\nserver 2.asia.pool.ntp.org" > /etc/ntp.conf;
-    ${this.startNtp()}
+    sudo echo -e "server time.bora.net iburst\nserver send.mx.cdnetworks.com iburst" > /etc/chrony.conf;
+    ${this.startChrony()}
     `;
   }
 
@@ -159,6 +196,8 @@ export default abstract class AbstractScript {
   abstract installLvm2(): string;
 
   abstract installNtp(): string;
+
+  abstract installChrony(): string;
 
   abstract installOpenSSL(): string;
 
