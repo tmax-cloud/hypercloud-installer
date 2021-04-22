@@ -54,10 +54,18 @@ export default class KubernetesInstaller extends AbstractInstaller {
     registry: string;
     version: string;
     podSubnet: string;
+    serviceSubnet: string;
     callback: any;
     setProgress: Function;
   }) {
-    const { registry, version, podSubnet, callback, setProgress } = param;
+    const {
+      registry,
+      version,
+      podSubnet,
+      serviceSubnet,
+      callback,
+      setProgress
+    } = param;
     /**
      * k8s설치는 prolinux지원, 호스트네임 등록, keepalived 설정 등
      * 여러 신경써야할 부분들이 있어서
@@ -77,7 +85,13 @@ export default class KubernetesInstaller extends AbstractInstaller {
     });
     setProgress(40);
 
-    await this._installMainMaster(registry, version, podSubnet, callback);
+    await this._installMainMaster(
+      registry,
+      version,
+      podSubnet,
+      serviceSubnet,
+      callback
+    );
     setProgress(60);
 
     await this._installMaster(registry, version, callback);
@@ -346,6 +360,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
     registry: string,
     version: string,
     podSubnet: string,
+    serviceSubnet: string,
     callback: any
   ) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
@@ -362,7 +377,8 @@ export default class KubernetesInstaller extends AbstractInstaller {
         version,
         this.env.virtualIp,
         mainMaster.ip,
-        podSubnet
+        podSubnet,
+        serviceSubnet
       )}
       ${script.setEnvForKubernetes(mainMaster.hostName)}
       ${script.startInstallCrio()}

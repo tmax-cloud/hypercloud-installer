@@ -103,24 +103,26 @@ function InstallContentsPrometheusAlready(props: any) {
           </div>
           <div>
             <div>
-              <span className={['medium', 'thick'].join(' ')}>PVC</span>
+              <span className={['medium', 'thick'].join(' ')}>PVC 용량</span>
             </div>
             <div>
               <span className={['medium', 'lightDark'].join(' ')}>
-                {product.isUsePvc ? '사용함' : '사용안함'}
+                {product.pvcCapacity}
+                GB
               </span>
             </div>
           </div>
-          <div>
+          {/* <div>
             <div>
               <span className={['medium', 'thick'].join(' ')}>Service</span>
             </div>
             <div>
               <span className={['medium', 'lightDark'].join(' ')}>
-                {product.serviceType}/{product.port}
+                {product.serviceType}
+/{product.port}
               </span>
             </div>
-          </div>
+          </div> */}
           <div>
             <span
               style={{ marginRight: '5px' }}

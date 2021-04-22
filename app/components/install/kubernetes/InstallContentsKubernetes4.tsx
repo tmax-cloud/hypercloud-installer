@@ -58,6 +58,18 @@ function InstallContentsKubernetes4(props: any) {
             </span>
           </div>
         </div>
+        <div style={{ marginBottom: '30px' }}>
+          <div>
+            <span className={['medium', 'thick'].join(' ')}>
+              Service Subnet
+            </span>
+          </div>
+          <div>
+            <span className={['medium', 'lightDark'].join(' ')}>
+              {state.serviceSubnet}
+            </span>
+          </div>
+        </div>
         {getRegistryJsx()}
         <div>
           <Button

@@ -30,15 +30,16 @@ function InstallContentsPrometheus4(props: any) {
         </div>
         <div style={{ marginBottom: '30px' }}>
           <div>
-            <span className={['medium', 'thick'].join(' ')}>PVC</span>
+            <span className={['medium', 'thick'].join(' ')}>PVC 용량</span>
           </div>
           <div>
             <span className={['medium', 'lightDark'].join(' ')}>
-              {state.isUsePvc ? '사용함' : '사용안함'}
+              {state.pvcCapacity}
+              GB
             </span>
           </div>
         </div>
-        <div style={{ marginBottom: '30px' }}>
+        {/* <div style={{ marginBottom: '30px' }}>
           <div>
             <span className={['medium', 'thick'].join(' ')}>Service</span>
           </div>
@@ -47,7 +48,7 @@ function InstallContentsPrometheus4(props: any) {
               {state.serviceType}/{state.port}
             </span>
           </div>
-        </div>
+        </div> */}
         <div>
           <Button
             variant="contained"

@@ -18,11 +18,16 @@ export default abstract class AbstractScript {
     version: string,
     virtualIp: string,
     mainMasterIp: string,
-    podSubnet?: string
+    podSubnet?: string,
+    serviceSubnet?: string
   ) {
     let podSubnetScript = '';
     if (podSubnet) {
       podSubnetScript = `sudo sed -i "s|podSubnet=$podSubnet|podSubnet=${podSubnet}|g" ./k8s.config;`;
+    }
+    let serviceSubnetScript = '';
+    if (serviceSubnet) {
+      serviceSubnetScript = `sudo sed -i "s|serviceSubnet=$serviceSubnet|serviceSubnet=${serviceSubnet}|g" ./k8s.config;`;
     }
     return `
     cd ~/${KubernetesInstaller.INSTALL_HOME}/manifest;
@@ -34,6 +39,7 @@ export default abstract class AbstractScript {
     sudo sed -i "s|apiServer=$apiServer|apiServer=${virtualIp}|g" ./k8s.config;
     echo mainMasterIp=${mainMasterIp} >> ./k8s.config
     ${podSubnetScript}
+    ${serviceSubnetScript}
     `;
   }
 

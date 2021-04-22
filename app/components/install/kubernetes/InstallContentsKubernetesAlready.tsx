@@ -112,6 +112,18 @@ function InstallContentsKubernetesAlready(props: any) {
             </div>
           </div>
           <div>
+            <div>
+              <span className={['medium', 'thick'].join(' ')}>
+                Service Subnet
+              </span>
+            </div>
+            <div>
+              <span className={['medium', 'lightDark'].join(' ')}>
+                {product.serviceSubnet}
+              </span>
+            </div>
+          </div>
+          <div>
             <span
               style={{ marginRight: '5px' }}
               className={['small', 'lightDark'].join(' ')}

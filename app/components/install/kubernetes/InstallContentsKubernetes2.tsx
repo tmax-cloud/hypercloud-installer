@@ -58,6 +58,9 @@ function InstallContentsKubernetes2(props: any) {
 
   const [ip, setIp] = useState('');
   const [ipError, setIpError] = useState('');
+
+  const [serviceIp, setServiceIp] = useState('');
+  const [serviceIpError, setServiceIpError] = useState('');
   const hasIpError = (target = ip, setFunc = setIpError) => {
     if (target.length === 0) {
       setFunc('IP를 입력해주세요');
@@ -75,6 +78,9 @@ function InstallContentsKubernetes2(props: any) {
 
   const [mask, setMask] = useState('');
   const [maskError, setMaskError] = useState('');
+
+  const [serviceMask, setServiceMask] = useState('');
+  const [serviceMaskError, setServiceMaskError] = useState('');
   const hasMaskError = (target = mask, setFunc = setMaskError) => {
     if (target.length === 0) {
       setFunc('net mask를 입력해주세요');
@@ -157,8 +163,8 @@ function InstallContentsKubernetes2(props: any) {
       </div>
       <div className={['childLeftRightLeft'].join(' ')}>
         <div className={[styles.titleBox].join(' ')}>
-          <span className={['medium'].join(' ')}>네트워크 대역</span>
-          <Tooltip title="Kubernetes POD의 IP 대역으로 사용됩니다.">
+          <span className={['medium'].join(' ')}>Pod 네트워크 대역</span>
+          <Tooltip title="Kubernetes Pod의 IP 대역으로 사용됩니다.">
             <IconButton>
               <HelpOutlineIcon />
             </IconButton>
@@ -179,7 +185,7 @@ function InstallContentsKubernetes2(props: any) {
               // hasNameError(e.target.value);
             }}
             onBlur={e => {
-              hasIpError(e.target.value);
+              hasIpError(e.target.value, setIpError);
             }}
             error={ipError.length !== 0}
             helperText={ipError}
@@ -204,10 +210,66 @@ function InstallContentsKubernetes2(props: any) {
               // hasNameError(e.target.value);
             }}
             onBlur={e => {
-              hasMaskError(e.target.value);
+              hasMaskError(e.target.value, setMaskError);
             }}
             error={maskError.length !== 0}
             helperText={maskError}
+          />
+        </div>
+      </div>
+      <div className={['childLeftRightLeft'].join(' ')}>
+        <div className={[styles.titleBox].join(' ')}>
+          <span className={['medium'].join(' ')}>Service 네트워크 대역</span>
+          <Tooltip title="Kubernetes Service의 IP 대역으로 사용됩니다.">
+            <IconButton>
+              <HelpOutlineIcon />
+            </IconButton>
+          </Tooltip>
+        </div>
+        <div>
+          <TextField
+            required
+            className={['medium'].join(' ')}
+            id="outlined-required"
+            // label="Name"
+            placeholder="10.96.0.0"
+            variant="outlined"
+            size="small"
+            value={serviceIp}
+            onChange={e => {
+              setServiceIp(e.target.value);
+              // hasNameError(e.target.value);
+            }}
+            onBlur={e => {
+              hasIpError(e.target.value, setServiceIpError);
+            }}
+            error={serviceIpError.length !== 0}
+            helperText={serviceIpError}
+          />
+          <span
+            style={{ margin: '0px 5px' }}
+            className={['veryLarge'].join(' ')}
+          >
+            /
+          </span>
+          <TextField
+            required
+            className={['short'].join(' ')}
+            id="outlined-required"
+            // label="Name"
+            placeholder="16"
+            variant="outlined"
+            size="small"
+            value={serviceMask}
+            onChange={e => {
+              setServiceMask(e.target.value);
+              // hasNameError(e.target.value);
+            }}
+            onBlur={e => {
+              hasMaskError(e.target.value, setServiceMaskError);
+            }}
+            error={serviceMaskError.length !== 0}
+            helperText={serviceMaskError}
           />
         </div>
       </div>
@@ -223,8 +285,10 @@ function InstallContentsKubernetes2(props: any) {
           onClick={() => {
             // error validation
             let hasError = false;
-            if (hasIpError()) hasError = true;
-            if (hasMaskError()) hasError = true;
+            if (hasIpError(ip, setIpError)) hasError = true;
+            if (hasIpError(serviceIp, setServiceIpError)) hasError = true;
+            if (hasMaskError(mask, setMaskError)) hasError = true;
+            if (hasMaskError(serviceMask, setServiceMaskError)) hasError = true;
             if (hasError) return;
 
             let registry = '';
@@ -235,6 +299,7 @@ function InstallContentsKubernetes2(props: any) {
             setState({
               version: state.version,
               podSubnet: `${ip}/${mask}`,
+              serviceSubnet: `${serviceIp}/${serviceMask}`,
               registry
             });
             dispatchAppState({

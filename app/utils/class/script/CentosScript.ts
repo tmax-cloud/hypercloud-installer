@@ -31,6 +31,12 @@ export default class CentosScript extends AbstractScript {
         podSubnet=\${podSubnet}
     fi
 
+    if [[ -z \${serviceSubnet} ]]; then
+    serviceSubnet=10.96.0.0/16
+    else
+        serviceSubnet=\${serviceSubnet}
+    fi
+
     #install kubernetes components
     sudo yum install -y kubeadm-\${k8sVersion}-0 kubelet-\${k8sVersion}-0 kubectl-\${k8sVersion}-0
     sudo systemctl enable --now kubelet
@@ -44,6 +50,7 @@ export default class CentosScript extends AbstractScript {
     sudo sed -i "s|advertiseAddress: {apiServer}|advertiseAddress: \${mainMasterIp}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|controlPlaneEndpoint: {apiServer}|controlPlaneEndpoint: \${apiServer}|g" \${yaml_dir}/kubeadm-config.yaml
     sudo sed -i "s|{podSubnet}|\${podSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
+    sudo sed -i "s|{serviceSubnet}|\${serviceSubnet}|g" \${yaml_dir}/kubeadm-config.yaml
     if [[ "\${imageRegistry}" == "" ]]; then
     sudo sed -i "s|{imageRegistry}/|\${imageRegistry}|g" \${yaml_dir}/kubeadm-config.yaml
     else

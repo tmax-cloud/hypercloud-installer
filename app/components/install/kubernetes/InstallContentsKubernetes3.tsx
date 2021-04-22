@@ -34,7 +34,8 @@ function InstallContentsKubernetes3(props: any) {
       name: CONST.PRODUCT.KUBERNETES.NAME,
       version: state.version,
       registry: state.registry,
-      podSubnet: state.podSubnet
+      podSubnet: state.podSubnet,
+      serviceSubnet: state.serviceSubnet
     });
     // json 파일 저장
     env.updateEnv(nowEnv.name, nowEnv);
@@ -73,6 +74,7 @@ function InstallContentsKubernetes3(props: any) {
         registry: state.registry,
         version: state.version,
         podSubnet: state.podSubnet,
+        serviceSubnet: state.serviceSubnet,
         callback,
         setProgress
       });
