@@ -262,7 +262,7 @@ export default class PrometheusInstaller extends AbstractInstaller {
     const { mainMaster } = this.env.getNodesSortedByRole();
 
     // Step 0. Prometheus Config 설정
-    mainMaster.cmd = this._step0();
+    mainMaster.cmd = this._step0(state);
     await mainMaster.exeCmd(callback);
 
     // Step 1. installer 실행
@@ -279,12 +279,15 @@ export default class PrometheusInstaller extends AbstractInstaller {
     console.debug('###### Finish remove main Master... ######');
   }
 
-  private _step0(): string {
+  private _step0(state: { version: string; pvcCapacity: string }): string {
+    const { pvcCapacity } = state;
     // XXX: sed 부분 주석 처리, config 파일에 적힌 내용 sed하지 않음
     let script = `
       cd ~/${PrometheusInstaller.INSTALL_HOME};
       sudo sed -i 's|\\r$||g' version.conf;
       . version.conf;
+
+      sudo sed -i "s|$PROMETHEUS_PVC|${pvcCapacity}Gi|g" ./version.conf;
 
       # sudo sed -i "s|$PROMETHEUS_VERSION|v${PrometheusInstaller.PROMETHEUS_VERSION}|g" ./version.conf;
       # sudo sed -i "s|$PROMETHEUS_OPERATOR_VERSION|v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION}|g" ./version.conf;

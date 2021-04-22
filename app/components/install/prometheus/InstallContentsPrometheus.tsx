@@ -15,9 +15,10 @@ function InstallContentsPrometheus(props: any) {
 
   const [state, setState] = useState({
     version: PrometheusInstaller.PROMETHEUS_VERSION,
-    isUsePvc: 'true',
-    serviceType: '',
-    port: ''
+    pvcCapacity: ''
+    // isUsePvc: 'true',
+    // serviceType: '',
+    // port: ''
   });
 
   return (

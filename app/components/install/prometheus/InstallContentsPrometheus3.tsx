@@ -34,9 +34,10 @@ function InstallContentsPrometheus3(props: any) {
     nowEnv.addProduct({
       name: CONST.PRODUCT.PROMETHEUS.NAME,
       version: state.version,
-      isUsePvc: state.isUsePvc,
-      serviceType: state.serviceType,
-      port: state.port
+      pvcCapacity: state.pvcCapacity
+      // isUsePvc: state.isUsePvc,
+      // serviceType: state.serviceType,
+      // port: state.port
     });
     // json 파일 저장
     env.updateEnv(nowEnv.name, nowEnv);

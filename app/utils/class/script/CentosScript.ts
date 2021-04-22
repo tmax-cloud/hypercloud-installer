@@ -120,10 +120,10 @@ EOF
 
   cloneGitFile(repoPath: string, repoBranch = 'master') {
     return `
-    sudo yum install -y git;
-    sudo mkdir -p ~/${Env.INSTALL_ROOT};
-    sudo cd ~/${Env.INSTALL_ROOT};
-    sudo git clone -b ${repoBranch} ${repoPath};
+    yum install -y git;
+    mkdir -p ~/${Env.INSTALL_ROOT};
+    cd ~/${Env.INSTALL_ROOT};
+    git clone -b ${repoBranch} ${repoPath};
     `;
   }
 
