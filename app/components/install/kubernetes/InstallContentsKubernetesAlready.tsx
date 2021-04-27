@@ -47,6 +47,7 @@ function InstallContentsKubernetesAlready(props: any) {
   };
 
   const remove = async () => {
+    // 삭제는 설치의 역순
     console.debug(`nowEnv`, nowEnv);
 
     const kubernetesInstaller = KubernetesInstaller.getInstance;

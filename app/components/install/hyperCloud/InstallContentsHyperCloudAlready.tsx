@@ -21,6 +21,7 @@ import routes from '../../../utils/constants/routes.json';
 import HyperCloudOperatorInstaller from '../../../utils/class/installer/HyperCloudOperatorInstaller';
 import HyperCloudConsoleInstaller from '../../../utils/class/installer/HyperCloudConsoleInstaller';
 import TemplateSeviceBrokerInstaller from '../../../utils/class/installer/TemplateSeviceBrokerInstaller';
+import HyperAuthInstaller from '../../../utils/class/installer/HyperAuthInstaller';
 
 function InstallContentsHyperCloudAlready(props: any) {
   console.debug(InstallContentsHyperCloudAlready.name, props);
@@ -50,7 +51,21 @@ function InstallContentsHyperCloudAlready(props: any) {
   };
 
   const remove = async () => {
+    // 삭제는 설치의 역순
     console.debug(`nowEnv`, nowEnv);
+
+    // template service broker delete
+    const templateSeviceBrokerInstaller =
+      TemplateSeviceBrokerInstaller.getInstance;
+    templateSeviceBrokerInstaller.env = nowEnv;
+    await templateSeviceBrokerInstaller.remove();
+
+    // 유저 삭제 로직
+    const hyperAuthInstaller = HyperAuthInstaller.getInstance;
+    hyperAuthInstaller.env = nowEnv;
+    await hyperAuthInstaller.deleteUser({
+      userName: product.email
+    });
 
     // console delete
     const hyperCloudConsoleInstaller = HyperCloudConsoleInstaller.getInstance;
@@ -61,12 +76,6 @@ function InstallContentsHyperCloudAlready(props: any) {
     const hyperCloudOperatorInstaller = HyperCloudOperatorInstaller.getInstance;
     hyperCloudOperatorInstaller.env = nowEnv;
     await hyperCloudOperatorInstaller.remove();
-
-    // template service broker delete
-    const templateSeviceBrokerInstaller =
-      TemplateSeviceBrokerInstaller.getInstance;
-    templateSeviceBrokerInstaller.env = nowEnv;
-    await templateSeviceBrokerInstaller.remove();
   };
 
   const getNetworkJsx = state => {

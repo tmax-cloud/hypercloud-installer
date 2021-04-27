@@ -123,8 +123,16 @@ function InstallContentsHyperCloud3(props: any) {
     } catch (error) {
       console.error(error);
 
+      // template service broker delete
       await templateSeviceBrokerInstaller.remove();
+      // 유저 삭제 로직
+      await hyperAuthInstaller.deleteUser({
+        userName: state.email,
+        callback
+      });
+      // console delete
       await hyperCloudConsoleInstaller.remove();
+      // operator delete
       await hyperCloudOperatorInstaller.remove();
     } finally {
       console.log();

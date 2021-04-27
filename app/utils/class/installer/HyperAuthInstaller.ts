@@ -217,6 +217,28 @@ export default class HyperAuthInstaller extends AbstractInstaller {
     await mainMaster.exeCmd(callback);
   }
 
+  public async deleteUser(param: { userName: string; callback?: any }) {
+    const { userName, callback } = param;
+    const { mainMaster } = this.env.getNodesSortedByRole();
+    mainMaster.cmd = `
+    export HYPERAUTH_SERVICE_IP=\`kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
+    token=$(curl -X POST 'http://'$HYPERAUTH_SERVICE_IP':8080/auth/realms/master/protocol/openid-connect/token' \\
+    -H "Content-Type: application/x-www-form-urlencoded" \\
+    -d "username=admin" \\
+    -d 'password=admin' \\
+    -d 'grant_type=password' \\
+    -d 'client_id=admin-cli' | jq -r '.access_token')
+
+    echo accessToken : $token
+
+    curl -g -i -X POST \\
+    -H "Content-Type:application/json" \\
+    -H "Authorization:Bearer $token" \\
+    'http://'$HYPERAUTH_SERVICE_IP':8080/auth/realms/tmax/user/${userName}'
+    `;
+    await mainMaster.exeCmd(callback);
+  }
+
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
     const { mainMaster } = this.env.getNodesSortedByRole();
