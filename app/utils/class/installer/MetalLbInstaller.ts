@@ -66,8 +66,8 @@ export default class MetalLbInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -85,34 +85,34 @@ export default class MetalLbInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download kubernetes image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download kubernetes image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${MetalLbInstaller.DIR}/`;
-    await scp.sendFile(mainMaster, srcPath, `${MetalLbInstaller.IMAGE_HOME}/`);
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${MetalLbInstaller.DIR}/`;
+  //   await scp.sendFile(mainMaster, srcPath, `${MetalLbInstaller.IMAGE_HOME}/`);
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -131,63 +131,63 @@ export default class MetalLbInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   mainMaster.cmd += this._getImagePathEditScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${MetalLbInstaller.IMAGE_HOME};
-    export METALLB_HOME=~/${MetalLbInstaller.IMAGE_HOME};
-    export METALLB_VERSION=v${MetalLbInstaller.METALLB_VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $METALLB_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < metallb-controller_\${METALLB_VERSION}.tar
-      sudo docker load < metallb-speaker_\${METALLB_VERSION}.tar
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull metallb/controller:\${METALLB_VERSION}
-      sudo docker pull metallb/speaker:\${METALLB_VERSION}
-      # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/MetalLB/metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml > metallb.yaml;
-      # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/MetalLB/metallb_cidr.yaml > metallb_cidr.yaml;
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag metallb/controller:\${METALLB_VERSION} \${REGISTRY}/metallb/controller:\${METALLB_VERSION}
-      sudo docker tag metallb/speaker:\${METALLB_VERSION} \${REGISTRY}/metallb/speaker:\${METALLB_VERSION}
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  //   mkdir -p ~/${MetalLbInstaller.IMAGE_HOME};
+  //   export METALLB_HOME=~/${MetalLbInstaller.IMAGE_HOME};
+  //   export METALLB_VERSION=v${MetalLbInstaller.METALLB_VERSION};
+  //   export REGISTRY=${this.env.registry};
+  //   cd $METALLB_HOME;
+  //   `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //     sudo docker load < metallb-controller_\${METALLB_VERSION}.tar
+  //     sudo docker load < metallb-speaker_\${METALLB_VERSION}.tar
+  //     `;
+  //   } else {
+  //     gitPullCommand += `
+  //     sudo docker pull metallb/controller:\${METALLB_VERSION}
+  //     sudo docker pull metallb/speaker:\${METALLB_VERSION}
+  //     # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/MetalLB/metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml > metallb.yaml;
+  //     # curl https://raw.githubusercontent.com/tmax-cloud/hypercloud-install-guide/master/MetalLB/metallb_cidr.yaml > metallb_cidr.yaml;
+  //     `;
+  //   }
+  //   return `
+  //     ${gitPullCommand}
+  //     sudo docker tag metallb/controller:\${METALLB_VERSION} \${REGISTRY}/metallb/controller:\${METALLB_VERSION}
+  //     sudo docker tag metallb/speaker:\${METALLB_VERSION} \${REGISTRY}/metallb/speaker:\${METALLB_VERSION}
 
-      sudo docker push \${REGISTRY}/metallb/controller:\${METALLB_VERSION}
-      sudo docker push \${REGISTRY}/metallb/speaker:\${METALLB_VERSION}
-      #rm -rf $METALLB_HOME;
-      `;
-  }
+  //     sudo docker push \${REGISTRY}/metallb/controller:\${METALLB_VERSION}
+  //     sudo docker push \${REGISTRY}/metallb/speaker:\${METALLB_VERSION}
+  //     #rm -rf $METALLB_HOME;
+  //     `;
+  // }
 
   /**
    * private 메서드
    */
-  private _getImagePathEditScript(): string {
-    // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
-    return `
-    cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
-    sed -i 's| metallb/speaker| '${this.env.registry}'/metallb/speaker|g' metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-    sed -i 's| metallb/controller| '${this.env.registry}'/metallb/controller|g' metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
-    `;
-  }
+  // private _getImagePathEditScript(): string {
+  //   // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
+  //   return `
+  //   cd ~/${MetalLbInstaller.INSTALL_HOME}/manifest;
+  //   sed -i 's| metallb/speaker| '${this.env.registry}'/metallb/speaker|g' metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+  //   sed -i 's| metallb/controller| '${this.env.registry}'/metallb/controller|g' metallb_v${MetalLbInstaller.METALLB_VERSION}.yaml;
+  //   `;
+  // }
 
   private async _installMainMaster(data: Array<string>, callback: any) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');

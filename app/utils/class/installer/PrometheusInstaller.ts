@@ -96,8 +96,8 @@ export default class PrometheusInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -115,39 +115,39 @@ export default class PrometheusInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
 
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${PrometheusInstaller.DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${PrometheusInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${PrometheusInstaller.DIR}/`;
+  //   await scp.sendFile(
+  //     mainMaster,
+  //     srcPath,
+  //     `${PrometheusInstaller.IMAGE_HOME}/`
+  //   );
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -169,90 +169,90 @@ export default class PrometheusInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   mainMaster.cmd += this._getImagePathEditScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-      mkdir -p ~/${PrometheusInstaller.IMAGE_HOME};
-      export PROMETHEUS_HOME=~/${PrometheusInstaller.IMAGE_HOME};
-      export PROMETHEUS_VERSION=v${PrometheusInstaller.PROMETHEUS_VERSION};
-      export PROMETHEUS_OPERATOR_VERSION=v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION};
-      export NODE_EXPORTER_VERSION=v${PrometheusInstaller.NODE_EXPORTER_VERSION};
-      # export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
-      export KUBE_STATE_METRICS_VERSION=v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION};
-      export CONFIGMAP_RELOADER_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION};
-      export CONFIGMAP_RELOAD_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION};
-      export KUBE_RBAC_PROXY_VERSION=v${PrometheusInstaller.KUBE_RBAC_PROXY_VERSION};
-      export PROMETHEUS_ADAPTER_VERSION=v${PrometheusInstaller.PROMETHEUS_ADAPTER_VERSION};
-      export ALERTMANAGER_VERSION=v${PrometheusInstaller.ALERTMANAGER_VERSION};
-      export REGISTRY=${this.env.registry};
-      cd $PROMETHEUS_HOME;
-      `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-        sudo docker load < prometheus-prometheus_\${PROMETHEUS_VERSION}.tar;
-        sudo docker load < prometheus-operator_\${PROMETHEUS_OPERATOR_VERSION}.tar;
-        sudo docker load < node-exporter_\${NODE_EXPORTER_VERSION}.tar;
-        # sudo docker load < grafana_\${GRAFANA_VERSION}.tar;
-        sudo docker load < kube-state-metrics_\${KUBE_STATE_METRICS_VERSION}.tar;
-        sudo docker load < config-reloader_\${CONFIGMAP_RELOADER_VERSION}.tar;
-        sudo docker load < config-reload_\${CONFIGMAP_RELOAD_VERSION}.tar;
-        sudo docker load < kube-rbac-proxy_\${KUBE_RBAC_PROXY_VERSION}.tar;
-        sudo docker load < prometheus-adapter_\${PROMETHEUS_ADAPTER_VERSION}.tar;
-        sudo docker load < alertmanager_\${ALERTMANAGER_VERSION}.tar;
-        `;
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      gitPullCommand += `
-        sudo docker pull quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION};
-        sudo docker pull quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
-        sudo docker pull quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        # sudo docker pull grafana/grafana:\${GRAFANA_VERSION};
-        sudo docker pull quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
-        sudo docker pull quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
-        sudo docker pull quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
-        sudo docker pull quay.io/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
-        sudo docker pull quay.io/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
-        sudo docker pull quay.io/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
-        `;
-    }
-    return `
-        ${gitPullCommand}
-        sudo docker tag quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION} \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
-        sudo docker tag quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION} \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
-        sudo docker tag quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION} \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        # sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION};
-        sudo docker tag quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION} \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
-        sudo docker tag quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION} \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
-        sudo docker tag quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION} \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
-        sudo docker tag quay.io/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION} \${REGISTRY}/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
-        sudo docker tag quay.io/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION} \${REGISTRY}/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
-        sudo docker tag quay.io/prometheus/alertmanager:\${ALERTMANAGER_VERSION} \${REGISTRY}/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  //     mkdir -p ~/${PrometheusInstaller.IMAGE_HOME};
+  //     export PROMETHEUS_HOME=~/${PrometheusInstaller.IMAGE_HOME};
+  //     export PROMETHEUS_VERSION=v${PrometheusInstaller.PROMETHEUS_VERSION};
+  //     export PROMETHEUS_OPERATOR_VERSION=v${PrometheusInstaller.PROMETHEUS_OPERATOR_VERSION};
+  //     export NODE_EXPORTER_VERSION=v${PrometheusInstaller.NODE_EXPORTER_VERSION};
+  //     # export GRAFANA_VERSION=${PrometheusInstaller.GRAFANA_VERSION};
+  //     export KUBE_STATE_METRICS_VERSION=v${PrometheusInstaller.KUBE_STATE_METRICS_VERSION};
+  //     export CONFIGMAP_RELOADER_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOADER_VERSION};
+  //     export CONFIGMAP_RELOAD_VERSION=v${PrometheusInstaller.CONFIGMAP_RELOAD_VERSION};
+  //     export KUBE_RBAC_PROXY_VERSION=v${PrometheusInstaller.KUBE_RBAC_PROXY_VERSION};
+  //     export PROMETHEUS_ADAPTER_VERSION=v${PrometheusInstaller.PROMETHEUS_ADAPTER_VERSION};
+  //     export ALERTMANAGER_VERSION=v${PrometheusInstaller.ALERTMANAGER_VERSION};
+  //     export REGISTRY=${this.env.registry};
+  //     cd $PROMETHEUS_HOME;
+  //     `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //       sudo docker load < prometheus-prometheus_\${PROMETHEUS_VERSION}.tar;
+  //       sudo docker load < prometheus-operator_\${PROMETHEUS_OPERATOR_VERSION}.tar;
+  //       sudo docker load < node-exporter_\${NODE_EXPORTER_VERSION}.tar;
+  //       # sudo docker load < grafana_\${GRAFANA_VERSION}.tar;
+  //       sudo docker load < kube-state-metrics_\${KUBE_STATE_METRICS_VERSION}.tar;
+  //       sudo docker load < config-reloader_\${CONFIGMAP_RELOADER_VERSION}.tar;
+  //       sudo docker load < config-reload_\${CONFIGMAP_RELOAD_VERSION}.tar;
+  //       sudo docker load < kube-rbac-proxy_\${KUBE_RBAC_PROXY_VERSION}.tar;
+  //       sudo docker load < prometheus-adapter_\${PROMETHEUS_ADAPTER_VERSION}.tar;
+  //       sudo docker load < alertmanager_\${ALERTMANAGER_VERSION}.tar;
+  //       `;
+  //   } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+  //     gitPullCommand += `
+  //       sudo docker pull quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION};
+  //       sudo docker pull quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
+  //       sudo docker pull quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
+  //       # sudo docker pull grafana/grafana:\${GRAFANA_VERSION};
+  //       sudo docker pull quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
+  //       sudo docker pull quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
+  //       sudo docker pull quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
+  //       sudo docker pull quay.io/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
+  //       sudo docker pull quay.io/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
+  //       sudo docker pull quay.io/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
+  //       `;
+  //   }
+  //   return `
+  //       ${gitPullCommand}
+  //       sudo docker tag quay.io/prometheus/prometheus:\${PROMETHEUS_VERSION} \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
+  //       sudo docker tag quay.io/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION} \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
+  //       sudo docker tag quay.io/prometheus/node-exporter:\${NODE_EXPORTER_VERSION} \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
+  //       # sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION};
+  //       sudo docker tag quay.io/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION} \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
+  //       sudo docker tag quay.io/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION} \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
+  //       sudo docker tag quay.io/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION} \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
+  //       sudo docker tag quay.io/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION} \${REGISTRY}/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
+  //       sudo docker tag quay.io/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION} \${REGISTRY}/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
+  //       sudo docker tag quay.io/prometheus/alertmanager:\${ALERTMANAGER_VERSION} \${REGISTRY}/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
 
-        sudo docker push \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
-        sudo docker push \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
-        sudo docker push \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
-        # sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION};
-        sudo docker push \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
-        sudo docker push \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
-        sudo docker push \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
-        sudo docker push \${REGISTRY}/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
-        sudo docker push \${REGISTRY}/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
-        sudo docker push \${REGISTRY}/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
-        #rm -rf $PROMETHEUS_HOME;
-        `;
-  }
+  //       sudo docker push \${REGISTRY}/prometheus/prometheus:\${PROMETHEUS_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/prometheus-operator:\${PROMETHEUS_OPERATOR_VERSION};
+  //       sudo docker push \${REGISTRY}/prometheus/node-exporter:\${NODE_EXPORTER_VERSION};
+  //       # sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/kube-state-metrics:\${KUBE_STATE_METRICS_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/prometheus-config-reloader:\${CONFIGMAP_RELOADER_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/configmap-reload:\${CONFIGMAP_RELOAD_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/kube-rbac-proxy:\${KUBE_RBAC_PROXY_VERSION};
+  //       sudo docker push \${REGISTRY}/coreos/k8s-prometheus-adapter-amd64:\${PROMETHEUS_ADAPTER_VERSION};
+  //       sudo docker push \${REGISTRY}/prometheus/alertmanager:\${ALERTMANAGER_VERSION};
+  //       #rm -rf $PROMETHEUS_HOME;
+  //       `;
+  // }
 
   /**
    * private 메서드
@@ -326,23 +326,23 @@ export default class PrometheusInstaller extends AbstractInstaller {
     `;
   }
 
-  private _getImagePathEditScript(): string {
-    // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
-    return `
-    cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/;
-    sed -i "s| quay.io/prometheus/alertmanager| ${this.env.registry}/prometheus/alertmanager|g" alertmanager-alertmanager.yaml;
-    # sed -i "s| grafana/grafana| ${this.env.registry}/grafana|g" grafana-deployment.yaml;
-    sed -i "s| quay.io/coreos/kube-rbac-proxy| ${this.env.registry}/coreos/kube-rbac-proxy|g" kube-state-metrics-deployment.yaml;
-    sed -i "s| quay.io/coreos/kube-state-metrics| ${this.env.registry}/coreos/kube-state-metrics|g" kube-state-metrics-deployment.yaml;
-    sed -i "s| quay.io/prometheus/node-exporter| ${this.env.registry}/prometheus/node-exporter|g" node-exporter-daemonset.yaml;
-    sed -i "s| quay.io/coreos/kube-rbac-proxy| ${this.env.registry}/coreos/kube-rbac-proxy|g" node-exporter-daemonset.yaml;
-    sed -i "s| quay.io/coreos/k8s-prometheus-adapter-amd64| ${this.env.registry}/coreos/k8s-prometheus-adapter-amd64|g" prometheus-adapter-deployment.yaml;
-    sed -i "s| quay.io/prometheus/prometheus| ${this.env.registry}/prometheus/prometheus|g" prometheus-prometheus.yaml;
+  // private _getImagePathEditScript(): string {
+  //   // git guide에 내용 보기 쉽게 변경해놓음 (공백 유지해야함)
+  //   return `
+  //   cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/manifests/;
+  //   sed -i "s| quay.io/prometheus/alertmanager| ${this.env.registry}/prometheus/alertmanager|g" alertmanager-alertmanager.yaml;
+  //   # sed -i "s| grafana/grafana| ${this.env.registry}/grafana|g" grafana-deployment.yaml;
+  //   sed -i "s| quay.io/coreos/kube-rbac-proxy| ${this.env.registry}/coreos/kube-rbac-proxy|g" kube-state-metrics-deployment.yaml;
+  //   sed -i "s| quay.io/coreos/kube-state-metrics| ${this.env.registry}/coreos/kube-state-metrics|g" kube-state-metrics-deployment.yaml;
+  //   sed -i "s| quay.io/prometheus/node-exporter| ${this.env.registry}/prometheus/node-exporter|g" node-exporter-daemonset.yaml;
+  //   sed -i "s| quay.io/coreos/kube-rbac-proxy| ${this.env.registry}/coreos/kube-rbac-proxy|g" node-exporter-daemonset.yaml;
+  //   sed -i "s| quay.io/coreos/k8s-prometheus-adapter-amd64| ${this.env.registry}/coreos/k8s-prometheus-adapter-amd64|g" prometheus-adapter-deployment.yaml;
+  //   sed -i "s| quay.io/prometheus/prometheus| ${this.env.registry}/prometheus/prometheus|g" prometheus-prometheus.yaml;
 
-    cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/setup/;
-    sed -i "s| quay.io/coreos/configmap-reload| ${this.env.registry}/coreos/configmap-reload|g" prometheus-operator-deployment.yaml
-    sed -i "s| quay.io/coreos/prometheus-config-reloader| ${this.env.registry}/coreos/prometheus-config-reloader|g" prometheus-operator-deployment.yaml
-    sed -i "s| quay.io/coreos/prometheus-operator| ${this.env.registry}/coreos/prometheus-operator|g" prometheus-operator-deployment.yaml
-    `;
-  }
+  //   cd ~/${PrometheusInstaller.INSTALL_HOME}/manifest/setup/;
+  //   sed -i "s| quay.io/coreos/configmap-reload| ${this.env.registry}/coreos/configmap-reload|g" prometheus-operator-deployment.yaml
+  //   sed -i "s| quay.io/coreos/prometheus-config-reloader| ${this.env.registry}/coreos/prometheus-config-reloader|g" prometheus-operator-deployment.yaml
+  //   sed -i "s| quay.io/coreos/prometheus-operator| ${this.env.registry}/coreos/prometheus-operator|g" prometheus-operator-deployment.yaml
+  //   `;
+  // }
 }

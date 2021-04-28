@@ -94,8 +94,8 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -113,38 +113,38 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
 
     if (this.env.registry) {
       // 내부 image registry 구축 경우 해주어야 할 작업들
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${HyperCloudOperatorInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudOperatorInstaller.DIR}/`;
+  //   await scp.sendFile(
+  //     mainMaster,
+  //     srcPath,
+  //     `${HyperCloudOperatorInstaller.IMAGE_HOME}/`
+  //   );
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -166,52 +166,52 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-  mkdir -p ~/${HyperCloudOperatorInstaller.IMAGE_HOME};
-  export HPCD_HOME=~/${HyperCloudOperatorInstaller.IMAGE_HOME};
-  export HPCD_VERSION=${HyperCloudOperatorInstaller.HPCD_VERSION};
-  export REGISTRY=${this.env.registry};
-  cd $HPCD_HOME;
-  `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-    sudo docker load < mysql_5.6.tar;
-    sudo docker load < registry_2.6.2.tar;
-    sudo docker load < hypercloud-operator_b\${HPCD_VERSION}.tar;
-    `;
-    } else {
-      gitPullCommand += `
-    sudo docker pull mysql:5.6;
-    sudo docker pull registry:2.6.2;
-    sudo docker pull tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION};
-    `;
-    }
-    return `
-    ${gitPullCommand}
-    sudo docker tag mysql:5.6 \${REGISTRY}/mysql:5.6
-    sudo docker tag registry:2.6.2 \${REGISTRY}/registry:2.6.2
-    sudo docker tag tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  // mkdir -p ~/${HyperCloudOperatorInstaller.IMAGE_HOME};
+  // export HPCD_HOME=~/${HyperCloudOperatorInstaller.IMAGE_HOME};
+  // export HPCD_VERSION=${HyperCloudOperatorInstaller.HPCD_VERSION};
+  // export REGISTRY=${this.env.registry};
+  // cd $HPCD_HOME;
+  // `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //   sudo docker load < mysql_5.6.tar;
+  //   sudo docker load < registry_2.6.2.tar;
+  //   sudo docker load < hypercloud-operator_b\${HPCD_VERSION}.tar;
+  //   `;
+  //   } else {
+  //     gitPullCommand += `
+  //   sudo docker pull mysql:5.6;
+  //   sudo docker pull registry:2.6.2;
+  //   sudo docker pull tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION};
+  //   `;
+  //   }
+  //   return `
+  //   ${gitPullCommand}
+  //   sudo docker tag mysql:5.6 \${REGISTRY}/mysql:5.6
+  //   sudo docker tag registry:2.6.2 \${REGISTRY}/registry:2.6.2
+  //   sudo docker tag tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
 
-    sudo docker push \${REGISTRY}/mysql:5.6
-    sudo docker push \${REGISTRY}/registry:2.6.2
-    sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
-    #rm -rf $HPCD_HOME;
-    `;
-  }
+  //   sudo docker push \${REGISTRY}/mysql:5.6
+  //   sudo docker push \${REGISTRY}/registry:2.6.2
+  //   sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-operator:b\${HPCD_VERSION}
+  //   #rm -rf $HPCD_HOME;
+  //   `;
+  // }
 
   /**
    * private 메서드

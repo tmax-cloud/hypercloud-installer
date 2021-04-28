@@ -63,8 +63,8 @@ export default class IngressControllerInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -83,38 +83,38 @@ export default class IngressControllerInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
     console.debug('###### FINISH pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ START downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### FINISH downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ START downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### FINISH downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ START sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerInstaller.DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${IngressControllerInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### FINISH sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ START sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${IngressControllerInstaller.DIR}/`;
+  //   await scp.sendFile(
+  //     mainMaster,
+  //     srcPath,
+  //     `${IngressControllerInstaller.IMAGE_HOME}/`
+  //   );
+  //   console.debug(
+  //     '###### FINISH sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -133,60 +133,60 @@ export default class IngressControllerInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ START pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### FINISH pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ START pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### FINISH pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${IngressControllerInstaller.IMAGE_HOME};
-    ${this._exportEnv()}
-    cd $NGINX_INGRESS_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < ingress-nginx_\${NGINX_INGRESS_VERSION}.tar;
-      sudo docker load < kube-webhook-certgen_\${KUBE_WEBHOOK_CERTGEN_VERSION}.tar;
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION};
-      sudo docker pull jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION};
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  //   mkdir -p ~/${IngressControllerInstaller.IMAGE_HOME};
+  //   ${this._exportEnv()}
+  //   cd $NGINX_INGRESS_HOME;
+  //   `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //     sudo docker load < ingress-nginx_\${NGINX_INGRESS_VERSION}.tar;
+  //     sudo docker load < kube-webhook-certgen_\${KUBE_WEBHOOK_CERTGEN_VERSION}.tar;
+  //     `;
+  //   } else {
+  //     gitPullCommand += `
+  //     sudo docker pull quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION};
+  //     sudo docker pull jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION};
 
-      #sudo docker save quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION} > ingress-nginx_\${NGINX_INGRESS_VERSION}.tar
-      #sudo docker save jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION} > kube-webhook-certgen_\${KUBE_WEBHOOK_CERTGEN_VERSION}.tar
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION} \${REGISTRY}/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION};
-      sudo docker tag jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION} \${REGISTRY}/jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION};
+  //     #sudo docker save quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION} > ingress-nginx_\${NGINX_INGRESS_VERSION}.tar
+  //     #sudo docker save jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION} > kube-webhook-certgen_\${KUBE_WEBHOOK_CERTGEN_VERSION}.tar
+  //     `;
+  //   }
+  //   return `
+  //     ${gitPullCommand}
+  //     sudo docker tag quay.io/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION} \${REGISTRY}/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION};
+  //     sudo docker tag jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION} \${REGISTRY}/jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION};
 
-      sudo docker push \${REGISTRY}/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION}
-      sudo docker push \${REGISTRY}/jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION}
-      #rm -rf $NGINX_INGRESS_HOME;
-      `;
-  }
+  //     sudo docker push \${REGISTRY}/kubernetes-ingress-controller/nginx-ingress-controller:\${NGINX_INGRESS_VERSION}
+  //     sudo docker push \${REGISTRY}/jettech/kube-webhook-certgen:\${KUBE_WEBHOOK_CERTGEN_VERSION}
+  //     #rm -rf $NGINX_INGRESS_HOME;
+  //     `;
+  // }
 
-  private _exportEnv() {
-    return `
-    export NGINX_INGRESS_HOME=~/${IngressControllerInstaller.IMAGE_HOME};
-    export INGRESS_NGINX_NAME=${IngressControllerInstaller.INGRESS_NGINX_NAME};
-    export INGRESS_CLASS=${IngressControllerInstaller.INGRESS_CLASS};
-    export NGINX_INGRESS_VERSION=${IngressControllerInstaller.NGINX_INGRESS_VERSION};
-    export KUBE_WEBHOOK_CERTGEN_VERSION=v${IngressControllerInstaller.KUBE_WEBHOOK_CERTGEN_VERSION};
-    export REGISTRY=${this.env.registry};
-    `;
-  }
+  // private _exportEnv() {
+  //   return `
+  //   export NGINX_INGRESS_HOME=~/${IngressControllerInstaller.IMAGE_HOME};
+  //   export INGRESS_NGINX_NAME=${IngressControllerInstaller.INGRESS_NGINX_NAME};
+  //   export INGRESS_CLASS=${IngressControllerInstaller.INGRESS_CLASS};
+  //   export NGINX_INGRESS_VERSION=${IngressControllerInstaller.NGINX_INGRESS_VERSION};
+  //   export KUBE_WEBHOOK_CERTGEN_VERSION=v${IngressControllerInstaller.KUBE_WEBHOOK_CERTGEN_VERSION};
+  //   export REGISTRY=${this.env.registry};
+  //   `;
+  // }
 
   private async _installMainMaster(
     callback: any,

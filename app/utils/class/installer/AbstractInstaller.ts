@@ -29,9 +29,9 @@ export default abstract class AbstractInstaller {
 
   protected abstract preWorkInstall(param?: any): Promise<any>;
 
-  protected abstract downloadImageFile(param?: any): Promise<any>;
+  // protected abstract downloadImageFile(param?: any): Promise<any>;
 
-  protected abstract sendImageFile(param?: any): Promise<any>;
+  // protected abstract sendImageFile(param?: any): Promise<any>;
 
   protected abstract downloadGitFile(param?: any): Promise<any>;
 
@@ -39,7 +39,7 @@ export default abstract class AbstractInstaller {
 
   protected abstract cloneGitFile(param?: any): Promise<any>;
 
-  protected abstract registryWork(param?: any): Promise<any>;
+  // protected abstract registryWork(param?: any): Promise<any>;
 
-  protected abstract getImagePushScript(param?: any): string;
+  // protected abstract getImagePushScript(param?: any): string;
 }

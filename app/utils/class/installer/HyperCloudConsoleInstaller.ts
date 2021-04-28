@@ -62,8 +62,8 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -84,38 +84,38 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudConsoleInstaller.IMAGE_DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${HyperCloudConsoleInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${HyperCloudConsoleInstaller.IMAGE_DIR}/`;
+  //   await scp.sendFile(
+  //     mainMaster,
+  //     srcPath,
+  //     `${HyperCloudConsoleInstaller.IMAGE_HOME}/`
+  //   );
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -147,31 +147,31 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     );
   }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-  mkdir -p ~/${HyperCloudConsoleInstaller.IMAGE_HOME};
-  export CONSOLE_HOME=~/${HyperCloudConsoleInstaller.IMAGE_HOME};
-  export CONSOLE_VERSION=v${HyperCloudConsoleInstaller.CONSOLE_VERSION};
-  export REGISTRY=${this.env.registry};
-  cd $CONSOLE_HOME;
-  `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-    sudo docker load < console_\${CONSOLE_VERSION}.tar;
-    `;
-    } else {
-      gitPullCommand += `
-    sudo docker pull  tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION};
-    `;
-    }
-    return `
-    ${gitPullCommand}
-    sudo docker tag tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION};
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  // mkdir -p ~/${HyperCloudConsoleInstaller.IMAGE_HOME};
+  // export CONSOLE_HOME=~/${HyperCloudConsoleInstaller.IMAGE_HOME};
+  // export CONSOLE_VERSION=v${HyperCloudConsoleInstaller.CONSOLE_VERSION};
+  // export REGISTRY=${this.env.registry};
+  // cd $CONSOLE_HOME;
+  // `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //   sudo docker load < console_\${CONSOLE_VERSION}.tar;
+  //   `;
+  //   } else {
+  //     gitPullCommand += `
+  //   sudo docker pull  tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION};
+  //   `;
+  //   }
+  //   return `
+  //   ${gitPullCommand}
+  //   sudo docker tag tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION} \${REGISTRY}/tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION};
 
-    sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION}
-    #rm -rf $CONSOLE_HOME;
-    `;
-  }
+  //   sudo docker push \${REGISTRY}/tmaxcloudck/hypercloud-console:\${CONSOLE_VERSION}
+  //   #rm -rf $CONSOLE_HOME;
+  //   `;
+  // }
 
   private async _installMainMaster(callback: any) {
     console.debug('@@@@@@ Start installing console main Master... @@@@@@');

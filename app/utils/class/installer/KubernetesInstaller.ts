@@ -29,10 +29,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
 
   public static readonly CRIO_VERSION = `1.19:1.19.1`;
 
-  // public static readonly K8S_VERSION = `1.17.8`;
-
-  // public static readonly CRIO_VERSION = `1.17`;
-
   // singleton
   private static instance: KubernetesInstaller;
 
@@ -127,8 +123,8 @@ export default class KubernetesInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -149,39 +145,39 @@ export default class KubernetesInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        registry,
-        callback
-      });
+      // await this.registryWork({
+      //   registry,
+      //   callback
+      // });
     }
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download kubernetes image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download kubernetes image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.DIR}/`;
-    await scp.sendFile(
-      mainMaster,
-      srcPath,
-      `${KubernetesInstaller.IMAGE_HOME}/`
-    );
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.DIR}/`;
+  //   await scp.sendFile(
+  //     mainMaster,
+  //     srcPath,
+  //     `${KubernetesInstaller.IMAGE_HOME}/`
+  //   );
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected async downloadGitFile() {
     console.debug(
@@ -230,67 +226,67 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { registry: any; callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { registry, callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript(registry);
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { registry: any; callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { registry, callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript(registry);
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(registry: string): string {
-    const path = `~/${KubernetesInstaller.IMAGE_HOME}`;
-    let gitPullCommand = `
-      mkdir -p ${path};
-      cd ${path};
-      `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-        sudo docker load -i kube-apiserver.tar;
-        sudo docker load -i kube-scheduler.tar;
-        sudo docker load -i kube-controller-manager.tar ;
-        sudo docker load -i kube-proxy.tar;
-        sudo docker load -i etcd.tar;
-        sudo docker load -i coredns.tar;
-        sudo docker load -i pause.tar;
-        `;
-    } else {
-      gitPullCommand += `
-        sudo docker pull k8s.gcr.io/kube-proxy:v1.17.6;
-        sudo docker pull k8s.gcr.io/kube-apiserver:v1.17.6;
-        sudo docker pull k8s.gcr.io/kube-controller-manager:v1.17.6;
-        sudo docker pull k8s.gcr.io/kube-scheduler:v1.17.6;
-        sudo docker pull k8s.gcr.io/etcd:3.4.3-0;
-        sudo docker pull k8s.gcr.io/coredns:1.6.5;
-        sudo docker pull k8s.gcr.io/pause:3.1;
-        `;
-    }
+  // protected getImagePushScript(registry: string): string {
+  //   const path = `~/${KubernetesInstaller.IMAGE_HOME}`;
+  //   let gitPullCommand = `
+  //     mkdir -p ${path};
+  //     cd ${path};
+  //     `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //       sudo docker load -i kube-apiserver.tar;
+  //       sudo docker load -i kube-scheduler.tar;
+  //       sudo docker load -i kube-controller-manager.tar ;
+  //       sudo docker load -i kube-proxy.tar;
+  //       sudo docker load -i etcd.tar;
+  //       sudo docker load -i coredns.tar;
+  //       sudo docker load -i pause.tar;
+  //       `;
+  //   } else {
+  //     gitPullCommand += `
+  //       sudo docker pull k8s.gcr.io/kube-proxy:v1.17.6;
+  //       sudo docker pull k8s.gcr.io/kube-apiserver:v1.17.6;
+  //       sudo docker pull k8s.gcr.io/kube-controller-manager:v1.17.6;
+  //       sudo docker pull k8s.gcr.io/kube-scheduler:v1.17.6;
+  //       sudo docker pull k8s.gcr.io/etcd:3.4.3-0;
+  //       sudo docker pull k8s.gcr.io/coredns:1.6.5;
+  //       sudo docker pull k8s.gcr.io/pause:3.1;
+  //       `;
+  //   }
 
-    return `
-        ${gitPullCommand}
-        sudo docker tag k8s.gcr.io/kube-apiserver:v1.17.6 ${registry}/k8s.gcr.io/kube-apiserver:v1.17.6;
-        sudo docker tag k8s.gcr.io/kube-proxy:v1.17.6 ${registry}/k8s.gcr.io/kube-proxy:v1.17.6;
-        sudo docker tag k8s.gcr.io/kube-controller-manager:v1.17.6 ${registry}/k8s.gcr.io/kube-controller-manager:v1.17.6;
-        sudo docker tag k8s.gcr.io/etcd:3.4.3-0 ${registry}/k8s.gcr.io/etcd:3.4.3-0;
-        sudo docker tag k8s.gcr.io/coredns:1.6.5 ${registry}/k8s.gcr.io/coredns:1.6.5;
-        sudo docker tag k8s.gcr.io/kube-scheduler:v1.17.6 ${registry}/k8s.gcr.io/kube-scheduler:v1.17.6;
-        sudo docker tag k8s.gcr.io/pause:3.1 ${registry}/k8s.gcr.io/pause:3.1;
+  //   return `
+  //       ${gitPullCommand}
+  //       sudo docker tag k8s.gcr.io/kube-apiserver:v1.17.6 ${registry}/k8s.gcr.io/kube-apiserver:v1.17.6;
+  //       sudo docker tag k8s.gcr.io/kube-proxy:v1.17.6 ${registry}/k8s.gcr.io/kube-proxy:v1.17.6;
+  //       sudo docker tag k8s.gcr.io/kube-controller-manager:v1.17.6 ${registry}/k8s.gcr.io/kube-controller-manager:v1.17.6;
+  //       sudo docker tag k8s.gcr.io/etcd:3.4.3-0 ${registry}/k8s.gcr.io/etcd:3.4.3-0;
+  //       sudo docker tag k8s.gcr.io/coredns:1.6.5 ${registry}/k8s.gcr.io/coredns:1.6.5;
+  //       sudo docker tag k8s.gcr.io/kube-scheduler:v1.17.6 ${registry}/k8s.gcr.io/kube-scheduler:v1.17.6;
+  //       sudo docker tag k8s.gcr.io/pause:3.1 ${registry}/k8s.gcr.io/pause:3.1;
 
-        sudo docker push ${registry}/k8s.gcr.io/kube-apiserver:v1.17.6;
-        sudo docker push ${registry}/k8s.gcr.io/kube-proxy:v1.17.6;
-        sudo docker push ${registry}/k8s.gcr.io/kube-controller-manager:v1.17.6;
-        sudo docker push ${registry}/k8s.gcr.io/etcd:3.4.3-0;
-        sudo docker push ${registry}/k8s.gcr.io/coredns:1.6.5;
-        sudo docker push ${registry}/k8s.gcr.io/kube-scheduler:v1.17.6;
-        sudo docker push ${registry}/k8s.gcr.io/pause:3.1;
-        #rm -rf ${path};
-        `;
-  }
+  //       sudo docker push ${registry}/k8s.gcr.io/kube-apiserver:v1.17.6;
+  //       sudo docker push ${registry}/k8s.gcr.io/kube-proxy:v1.17.6;
+  //       sudo docker push ${registry}/k8s.gcr.io/kube-controller-manager:v1.17.6;
+  //       sudo docker push ${registry}/k8s.gcr.io/etcd:3.4.3-0;
+  //       sudo docker push ${registry}/k8s.gcr.io/coredns:1.6.5;
+  //       sudo docker push ${registry}/k8s.gcr.io/kube-scheduler:v1.17.6;
+  //       sudo docker push ${registry}/k8s.gcr.io/pause:3.1;
+  //       #rm -rf ${path};
+  //       `;
+  // }
 
   /**
    * public 메서드
@@ -474,50 +470,50 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug(`###### Finish remove ${type}... ######`);
   }
 
-  private async _downloadPackageFile() {
-    // TODO: download package file
-    console.debug(
-      '@@@@@@ Start downloading the package file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the package file to client local... ######'
-    );
-  }
+  // private async _downloadPackageFile() {
+  //   // TODO: download package file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the package file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the package file to client local... ######'
+  //   );
+  // }
 
-  private async _sendPackageFile() {
-    console.debug(
-      '@@@@@@ Start sending the package file to each node (using scp)... @@@@@@'
-    );
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}/`;
-    const destPath = `${KubernetesInstaller.ARCHIVE_HOME}/`;
-    console.debug(`srcPath`, srcPath);
-    console.debug(`destPath`, destPath);
-    await Promise.all(
-      this.env.nodeList.map(node => {
-        return scp.sendFile(node, srcPath, destPath);
-      })
-    );
-    console.debug(
-      '###### Finish sending the package file to each node (using scp)... ######'
-    );
-  }
+  // private async _sendPackageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the package file to each node (using scp)... @@@@@@'
+  //   );
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${KubernetesInstaller.ARCHIVE_DIR}/`;
+  //   const destPath = `${KubernetesInstaller.ARCHIVE_HOME}/`;
+  //   console.debug(`srcPath`, srcPath);
+  //   console.debug(`destPath`, destPath);
+  //   await Promise.all(
+  //     this.env.nodeList.map(node => {
+  //       return scp.sendFile(node, srcPath, destPath);
+  //     })
+  //   );
+  //   console.debug(
+  //     '###### Finish sending the package file to each node (using scp)... ######'
+  //   );
+  // }
 
-  private async _installLocalPackageRepository(callback: any) {
-    console.debug(
-      '@@@@@@ Start installing the local package repository at each node... @@@@@@'
-    );
-    const destPath = `${KubernetesInstaller.ARCHIVE_HOME}/`;
-    await Promise.all(
-      this.env.nodeList.map((node: Node) => {
-        const script = ScriptFactory.createScript(node.os.type);
-        node.cmd = script.setPackageRepository(destPath);
-        return node.exeCmd(callback);
-      })
-    );
-    console.debug(
-      '###### Finish installing the local package repository at each node... ######'
-    );
-  }
+  // private async _installLocalPackageRepository(callback: any) {
+  //   console.debug(
+  //     '@@@@@@ Start installing the local package repository at each node... @@@@@@'
+  //   );
+  //   const destPath = `${KubernetesInstaller.ARCHIVE_HOME}/`;
+  //   await Promise.all(
+  //     this.env.nodeList.map((node: Node) => {
+  //       const script = ScriptFactory.createScript(node.os.type);
+  //       node.cmd = script.setPackageRepository(destPath);
+  //       return node.exeCmd(callback);
+  //     })
+  //   );
+  //   console.debug(
+  //     '###### Finish installing the local package repository at each node... ######'
+  //   );
+  // }
 
   private async _installPackage(callback: any) {
     console.debug('@@@@@@ Start package install... @@@@@@');
@@ -531,21 +527,21 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug('###### Finish package install... ######');
   }
 
-  private async _installImageRegistry(registry: string, callback: any) {
-    console.debug(
-      '@@@@@@ Start installing the image registry at main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const script = ScriptFactory.createScript(mainMaster.os.type);
-    mainMaster.cmd = script.getImageRegistrySettingScript(
-      registry,
-      this.env.networkType
-    );
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish installing the image registry at main master node... ######'
-    );
-  }
+  // private async _installImageRegistry(registry: string, callback: any) {
+  //   console.debug(
+  //     '@@@@@@ Start installing the image registry at main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const script = ScriptFactory.createScript(mainMaster.os.type);
+  //   mainMaster.cmd = script.getImageRegistrySettingScript(
+  //     registry,
+  //     this.env.networkType
+  //   );
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish installing the image registry at main master node... ######'
+  //   );
+  // }
 
   private async _setPublicPackageRepository(callback: any) {
     console.debug(
@@ -616,9 +612,9 @@ export default class KubernetesInstaller extends AbstractInstaller {
       /**
        * 1. 패키지 파일 다운(client 로컬), 전송(각 노드), 설치 (각 노드) (현재 Kubernetes 설치 시에만 진행)
        */
-      await this._downloadPackageFile();
-      await this._sendPackageFile();
-      await this._installLocalPackageRepository(callback);
+      // await this._downloadPackageFile();
+      // await this._sendPackageFile();
+      // await this._installLocalPackageRepository(callback);
     } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
       // external network 경우 해주어야 할 작업들
     }
@@ -628,7 +624,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
       /**
        * 1. image registry 설치 (main 마스터 노드)
        */
-      await this._installImageRegistry(registry, callback);
+      // await this._installImageRegistry(registry, callback);
     }
     console.debug('###### Finish env setting... ######');
   }

@@ -88,8 +88,8 @@ export default class RookCephInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -107,36 +107,36 @@ export default class RookCephInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
 
     // TODO: CDI
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${RookCephInstaller.DIR}/`;
-    await scp.sendFile(mainMaster, srcPath, `${RookCephInstaller.IMAGE_HOME}/`);
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${RookCephInstaller.DIR}/`;
+  //   await scp.sendFile(mainMaster, srcPath, `${RookCephInstaller.IMAGE_HOME}/`);
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -156,85 +156,85 @@ export default class RookCephInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-    mkdir -p ~/${RookCephInstaller.IMAGE_HOME};
-    export ROOK_HOME=~/${RookCephInstaller.IMAGE_HOME};
-    export CEPH_VERSION=v${RookCephInstaller.CEPH_VERSION};
-    export ROOK_VERSION=v${RookCephInstaller.ROOK_VERSION};
-    export CEPHCSI_VERSION=v${RookCephInstaller.CEPHCSI_VERSION};
-    export NODE_DRIVER_VERSION=v${RookCephInstaller.NODE_DRIVER_VERSION};
-    export RESIZER_VERSION=v${RookCephInstaller.RESIZER_VERSION};
-    export PROVISIONER_VERSION=v${RookCephInstaller.PROVISIONER_VERSION};
-    export SNAPSHOTTER_VERSION=v${RookCephInstaller.SNAPSHOTTER_VERSION};
-    export ATTACHER_VERSION=v${RookCephInstaller.ATTACHER_VERSION};
-    export SNAPSHOT_CONTROLLER_VERSION=${RookCephInstaller.SNAPSHOT_CONTROLLER_VERSION};
-    export REGISTRY=${this.env.registry};
-    cd $ROOK_HOME;
-    `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-      sudo docker load < ceph_\${CEPH_VERSION}.tar;
-      sudo docker load < rook-ceph_\${ROOK_VERSION}.tar;
-      sudo docker load < cephcsi_\${CEPHCSI_VERSION}.tar;
-      sudo docker load < csi-node-driver-registrar_\${NODE_DRIVER_VERSION}.tar;
-      sudo docker load < csi-resizer_\${RESIZER_VERSION}.tar;
-      sudo docker load < csi-provisioner_\${PROVISIONER_VERSION}.tar;
-      sudo docker load < csi-snapshotter_\${SNAPSHOTTER_VERSION}.tar;
-      sudo docker load < csi-attacher_\${ATTACHER_VERSION}.tar;
-      sudo docker load < snapshot-controller_\${SNAPSHOT_CONTROLLER_VERSION}.tar;
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  //   mkdir -p ~/${RookCephInstaller.IMAGE_HOME};
+  //   export ROOK_HOME=~/${RookCephInstaller.IMAGE_HOME};
+  //   export CEPH_VERSION=v${RookCephInstaller.CEPH_VERSION};
+  //   export ROOK_VERSION=v${RookCephInstaller.ROOK_VERSION};
+  //   export CEPHCSI_VERSION=v${RookCephInstaller.CEPHCSI_VERSION};
+  //   export NODE_DRIVER_VERSION=v${RookCephInstaller.NODE_DRIVER_VERSION};
+  //   export RESIZER_VERSION=v${RookCephInstaller.RESIZER_VERSION};
+  //   export PROVISIONER_VERSION=v${RookCephInstaller.PROVISIONER_VERSION};
+  //   export SNAPSHOTTER_VERSION=v${RookCephInstaller.SNAPSHOTTER_VERSION};
+  //   export ATTACHER_VERSION=v${RookCephInstaller.ATTACHER_VERSION};
+  //   export SNAPSHOT_CONTROLLER_VERSION=${RookCephInstaller.SNAPSHOT_CONTROLLER_VERSION};
+  //   export REGISTRY=${this.env.registry};
+  //   cd $ROOK_HOME;
+  //   `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //     sudo docker load < ceph_\${CEPH_VERSION}.tar;
+  //     sudo docker load < rook-ceph_\${ROOK_VERSION}.tar;
+  //     sudo docker load < cephcsi_\${CEPHCSI_VERSION}.tar;
+  //     sudo docker load < csi-node-driver-registrar_\${NODE_DRIVER_VERSION}.tar;
+  //     sudo docker load < csi-resizer_\${RESIZER_VERSION}.tar;
+  //     sudo docker load < csi-provisioner_\${PROVISIONER_VERSION}.tar;
+  //     sudo docker load < csi-snapshotter_\${SNAPSHOTTER_VERSION}.tar;
+  //     sudo docker load < csi-attacher_\${ATTACHER_VERSION}.tar;
+  //     sudo docker load < snapshot-controller_\${SNAPSHOT_CONTROLLER_VERSION}.tar;
 
-      `;
-    } else {
-      gitPullCommand += `
-      sudo docker pull ceph/ceph:\${CEPH_VERSION};
-      sudo docker pull rook/ceph:\${ROOK_VERSION};
-      sudo docker pull quay.io/cephcsi/cephcsi:\${CEPHCSI_VERSION};
-      sudo docker pull quay.io/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
-      sudo docker pull quay.io/k8scsi/csi-resizer:\${RESIZER_VERSION};
-      sudo docker pull quay.io/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
-      sudo docker pull quay.io/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
-      sudo docker pull quay.io/k8scsi/csi-attacher:\${ATTACHER_VERSION};
-      sudo docker pull quay.io/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
-      `;
-    }
-    return `
-      ${gitPullCommand}
-      sudo docker tag ceph/ceph:\${CEPH_VERSION} \${REGISTRY}/ceph/ceph:\${CEPH_VERSION};
-      sudo docker tag rook/ceph:\${ROOK_VERSION} \${REGISTRY}/rook/ceph:\${ROOK_VERSION};
-      sudo docker tag quay.io/cephcsi/cephcsi:\${CEPHCSI_VERSION} \${REGISTRY}/cephcsi/cephcsi:\${CEPHCSI_VERSION};
-      sudo docker tag quay.io/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION} \${REGISTRY}/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
-      sudo docker tag quay.io/k8scsi/csi-resizer:\${RESIZER_VERSION} \${REGISTRY}/k8scsi/csi-resizer:\${RESIZER_VERSION};
-      sudo docker tag quay.io/k8scsi/csi-provisioner:\${PROVISIONER_VERSION} \${REGISTRY}/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
-      sudo docker tag quay.io/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION} \${REGISTRY}/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
-      sudo docker tag quay.io/k8scsi/csi-attacher:\${ATTACHER_VERSION} \${REGISTRY}/k8scsi/csi-attacher:\${ATTACHER_VERSION};
-      sudo docker tag quay.io/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION} \${REGISTRY}/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
+  //     `;
+  //   } else {
+  //     gitPullCommand += `
+  //     sudo docker pull ceph/ceph:\${CEPH_VERSION};
+  //     sudo docker pull rook/ceph:\${ROOK_VERSION};
+  //     sudo docker pull quay.io/cephcsi/cephcsi:\${CEPHCSI_VERSION};
+  //     sudo docker pull quay.io/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
+  //     sudo docker pull quay.io/k8scsi/csi-resizer:\${RESIZER_VERSION};
+  //     sudo docker pull quay.io/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
+  //     sudo docker pull quay.io/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
+  //     sudo docker pull quay.io/k8scsi/csi-attacher:\${ATTACHER_VERSION};
+  //     sudo docker pull quay.io/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
+  //     `;
+  //   }
+  //   return `
+  //     ${gitPullCommand}
+  //     sudo docker tag ceph/ceph:\${CEPH_VERSION} \${REGISTRY}/ceph/ceph:\${CEPH_VERSION};
+  //     sudo docker tag rook/ceph:\${ROOK_VERSION} \${REGISTRY}/rook/ceph:\${ROOK_VERSION};
+  //     sudo docker tag quay.io/cephcsi/cephcsi:\${CEPHCSI_VERSION} \${REGISTRY}/cephcsi/cephcsi:\${CEPHCSI_VERSION};
+  //     sudo docker tag quay.io/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION} \${REGISTRY}/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
+  //     sudo docker tag quay.io/k8scsi/csi-resizer:\${RESIZER_VERSION} \${REGISTRY}/k8scsi/csi-resizer:\${RESIZER_VERSION};
+  //     sudo docker tag quay.io/k8scsi/csi-provisioner:\${PROVISIONER_VERSION} \${REGISTRY}/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
+  //     sudo docker tag quay.io/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION} \${REGISTRY}/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
+  //     sudo docker tag quay.io/k8scsi/csi-attacher:\${ATTACHER_VERSION} \${REGISTRY}/k8scsi/csi-attacher:\${ATTACHER_VERSION};
+  //     sudo docker tag quay.io/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION} \${REGISTRY}/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
 
-      sudo docker push \${REGISTRY}/ceph/ceph:\${CEPH_VERSION};
-      sudo docker push \${REGISTRY}/rook/ceph:\${ROOK_VERSION};
-      sudo docker push \${REGISTRY}/cephcsi/cephcsi:\${CEPHCSI_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/csi-resizer:\${RESIZER_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/csi-attacher:\${ATTACHER_VERSION};
-      sudo docker push \${REGISTRY}/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
-      #rm -rf $ROOK_HOME;
-      `;
-  }
+  //     sudo docker push \${REGISTRY}/ceph/ceph:\${CEPH_VERSION};
+  //     sudo docker push \${REGISTRY}/rook/ceph:\${ROOK_VERSION};
+  //     sudo docker push \${REGISTRY}/cephcsi/cephcsi:\${CEPHCSI_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/csi-node-driver-registrar:\${NODE_DRIVER_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/csi-resizer:\${RESIZER_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/csi-provisioner:\${PROVISIONER_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/csi-snapshotter:\${SNAPSHOTTER_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/csi-attacher:\${ATTACHER_VERSION};
+  //     sudo docker push \${REGISTRY}/k8scsi/snapshot-controller:\${SNAPSHOT_CONTROLLER_VERSION};
+  //     #rm -rf $ROOK_HOME;
+  //     `;
+  // }
 
   /**
    * private 메서드

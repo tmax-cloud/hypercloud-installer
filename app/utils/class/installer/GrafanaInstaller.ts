@@ -57,8 +57,8 @@ export default class GrafanaInstaller extends AbstractInstaller {
        * 1. 해당 이미지 파일 다운(client 로컬), 전송 (main 마스터 노드)
        * 2. git guide 다운(client 로컬), 전송(각 노드)
        */
-      await this.downloadImageFile();
-      await this.sendImageFile();
+      // await this.downloadImageFile();
+      // await this.sendImageFile();
 
       await this.downloadGitFile();
       await this.sendGitFile();
@@ -76,35 +76,35 @@ export default class GrafanaInstaller extends AbstractInstaller {
       /**
        * 1. 레지스트리 관련 작업
        */
-      await this.registryWork({
-        callback
-      });
+      // await this.registryWork({
+      //   callback
+      // });
     }
 
     console.debug('###### Finish pre-installation... ######');
   }
 
-  protected async downloadImageFile() {
-    // TODO: download image file
-    console.debug(
-      '@@@@@@ Start downloading the image file to client local... @@@@@@'
-    );
-    console.debug(
-      '###### Finish downloading the image file to client local... ######'
-    );
-  }
+  // protected async downloadImageFile() {
+  //   // TODO: download image file
+  //   console.debug(
+  //     '@@@@@@ Start downloading the image file to client local... @@@@@@'
+  //   );
+  //   console.debug(
+  //     '###### Finish downloading the image file to client local... ######'
+  //   );
+  // }
 
-  protected async sendImageFile() {
-    console.debug(
-      '@@@@@@ Start sending the image file to main master node... @@@@@@'
-    );
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${GrafanaInstaller.DIR}/`;
-    await scp.sendFile(mainMaster, srcPath, `${GrafanaInstaller.IMAGE_HOME}/`);
-    console.debug(
-      '###### Finish sending the image file to main master node... ######'
-    );
-  }
+  // protected async sendImageFile() {
+  //   console.debug(
+  //     '@@@@@@ Start sending the image file to main master node... @@@@@@'
+  //   );
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   const srcPath = `${Env.LOCAL_INSTALL_ROOT}/${GrafanaInstaller.DIR}/`;
+  //   await scp.sendFile(mainMaster, srcPath, `${GrafanaInstaller.IMAGE_HOME}/`);
+  //   console.debug(
+  //     '###### Finish sending the image file to main master node... ######'
+  //   );
+  // }
 
   protected downloadGitFile(param?: any): Promise<any> {
     throw new Error('Method not implemented.');
@@ -123,44 +123,44 @@ export default class GrafanaInstaller extends AbstractInstaller {
     console.debug('###### Finish clone the GIT file at each node... ######');
   }
 
-  protected async registryWork(param: { callback: any }) {
-    console.debug(
-      '@@@@@@ Start pushing the image at main master node... @@@@@@'
-    );
-    const { callback } = param;
-    const { mainMaster } = this.env.getNodesSortedByRole();
-    mainMaster.cmd = this.getImagePushScript();
-    mainMaster.cmd += this._getImagePathEditScript();
-    await mainMaster.exeCmd(callback);
-    console.debug(
-      '###### Finish pushing the image at main master node... ######'
-    );
-  }
+  // protected async registryWork(param: { callback: any }) {
+  //   console.debug(
+  //     '@@@@@@ Start pushing the image at main master node... @@@@@@'
+  //   );
+  //   const { callback } = param;
+  //   const { mainMaster } = this.env.getNodesSortedByRole();
+  //   mainMaster.cmd = this.getImagePushScript();
+  //   mainMaster.cmd += this._getImagePathEditScript();
+  //   await mainMaster.exeCmd(callback);
+  //   console.debug(
+  //     '###### Finish pushing the image at main master node... ######'
+  //   );
+  // }
 
-  protected getImagePushScript(): string {
-    let gitPullCommand = `
-      mkdir -p ~/${GrafanaInstaller.IMAGE_HOME};
-      export GRAFANA_HOME=~/${GrafanaInstaller.IMAGE_HOME};87
-      export REGISTRY=${this.env.registry};
-      cd $GRAFANA_HOME;
-      `;
-    if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      gitPullCommand += `
-        sudo docker load < grafana_\${GRAFANA_VERSION}.tar
-        `;
-    } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
-      gitPullCommand += `
-        sudo docker pull grafana/grafana:\${GRAFANA_VERSION}
-        `;
-    }
-    return `
-        ${gitPullCommand}
-        sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION}
+  // protected getImagePushScript(): string {
+  //   let gitPullCommand = `
+  //     mkdir -p ~/${GrafanaInstaller.IMAGE_HOME};
+  //     export GRAFANA_HOME=~/${GrafanaInstaller.IMAGE_HOME};87
+  //     export REGISTRY=${this.env.registry};
+  //     cd $GRAFANA_HOME;
+  //     `;
+  //   if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
+  //     gitPullCommand += `
+  //       sudo docker load < grafana_\${GRAFANA_VERSION}.tar
+  //       `;
+  //   } else if (this.env.networkType === NETWORK_TYPE.EXTERNAL) {
+  //     gitPullCommand += `
+  //       sudo docker pull grafana/grafana:\${GRAFANA_VERSION}
+  //       `;
+  //   }
+  //   return `
+  //       ${gitPullCommand}
+  //       sudo docker tag grafana/grafana:\${GRAFANA_VERSION} \${REGISTRY}/grafana:\${GRAFANA_VERSION}
 
-        sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION}
-        #rm -rf $GRAFANA_HOME;
-        `;
-  }
+  //       sudo docker push \${REGISTRY}/grafana:\${GRAFANA_VERSION}
+  //       #rm -rf $GRAFANA_HOME;
+  //       `;
+  // }
 
   /**
    * private 메서드
@@ -222,10 +222,10 @@ export default class GrafanaInstaller extends AbstractInstaller {
     `;
   }
 
-  private _getImagePathEditScript(): string {
-    return `
-    cd ~/${GrafanaInstaller.INSTALL_HOME}/yaml/;
-    sed -i "s/grafana\\/grafana/${this.env.registry}\\/grafana/g" grafana.yaml
-    `;
-  }
+  // private _getImagePathEditScript(): string {
+  //   return `
+  //   cd ~/${GrafanaInstaller.INSTALL_HOME}/yaml/;
+  //   sed -i "s/grafana\\/grafana/${this.env.registry}\\/grafana/g" grafana.yaml
+  //   `;
+  // }
 }
