@@ -360,14 +360,9 @@ export default class KubernetesInstaller extends AbstractInstaller {
     callback: any
   ) {
     console.debug('@@@@@@ Start installing main Master... @@@@@@');
-    const { mainMaster } = this.env.getNodesSortedByRole();
+    const { mainMaster, masterArr } = this.env.getNodesSortedByRole();
     const script = ScriptFactory.createScript(mainMaster.os.type);
     mainMaster.cmd = `
-      ${script.getMasterMultiplexingScript(
-        mainMaster,
-        99999999,
-        this.env.virtualIp
-      )}
       ${AbstractScript.setK8sConfig(
         registry,
         version,
@@ -400,11 +395,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
       masterArr.map((master, index) => {
         const script = ScriptFactory.createScript(master.os.type);
         master.cmd = `
-        ${script.getMasterMultiplexingScript(
-          master,
-          Math.floor(Math.random() * 99999999),
-          this.env.virtualIp
-        )}
         ${AbstractScript.setK8sConfig(
           registry,
           version,
@@ -607,6 +597,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
     const { registry, callback } = param;
     await this._setTimeSyncPackage(callback);
     await this._setLvm2(callback);
+    await this._setMultiplexing(callback);
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
       // internal network 경우 해주어야 할 작업들
       /**
@@ -629,6 +620,38 @@ export default class KubernetesInstaller extends AbstractInstaller {
     console.debug('###### Finish env setting... ######');
   }
 
+  private async _setMultiplexing(callback: any) {
+    const { mainMaster, masterArr } = this.env.getNodesSortedByRole();
+    let script = ScriptFactory.createScript(mainMaster.os.type);
+    mainMaster.cmd = `
+    mkdir -p ~/${Env.INSTALL_ROOT}/multiplexing;
+    cd ~/${Env.INSTALL_ROOT}/multiplexing;
+    ${script.getMasterMultiplexingScript(
+      mainMaster,
+      [mainMaster, ...masterArr],
+      99999999,
+      this.env.virtualIp
+    )}
+    `;
+    await mainMaster.exeCmd(callback);
+    await Promise.all(
+      masterArr.map((master, index) => {
+        script = ScriptFactory.createScript(master.os.type);
+        master.cmd = `
+        mkdir -p ~/${Env.INSTALL_ROOT}/multiplexing;
+        cd ~/${Env.INSTALL_ROOT}/multiplexing;
+        ${script.getMasterMultiplexingScript(
+          master,
+          [mainMaster, ...masterArr],
+          Math.floor(Math.random() * 99999999),
+          this.env.virtualIp
+        )}
+        `;
+        return master.exeCmd(callback);
+      })
+    );
+  }
+
   private async _setLvm2(callback: any) {
     await Promise.all(
       this.env.nodeList.map((node: Node) => {
@@ -640,7 +663,7 @@ export default class KubernetesInstaller extends AbstractInstaller {
   }
 
   private async _setTimeSyncPackage(callback: any) {
-    console.debug('@@@@@@ Start setting ntp... @@@@@@');
+    console.debug('@@@@@@ Start setting time sync package... @@@@@@');
     const {
       mainMaster,
       masterArr,
@@ -649,8 +672,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
 
     // 기존 서버 목록 주석 처리
     if (this.env.networkType === NETWORK_TYPE.INTERNAL) {
-      // main master를 ntp 서버로
-      // main master를 제외한 노드를 ntp client로 설정하기 위함
       let script = ScriptFactory.createScript(mainMaster.os.type);
       mainMaster.cmd = script.installChrony();
       mainMaster.cmd += AbstractScript.setChronyServer();
@@ -675,6 +696,6 @@ export default class KubernetesInstaller extends AbstractInstaller {
         })
       );
     }
-    console.debug('###### Finish setting ntp... ######');
+    console.debug('###### Finish setting time sync package... ######');
   }
 }

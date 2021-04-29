@@ -213,6 +213,7 @@ export default abstract class AbstractScript {
 
   abstract getMasterMultiplexingScript(
     node: Node,
+    masterList: Node[],
     priority: number,
     vip: string
   ): string;
