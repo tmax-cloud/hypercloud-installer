@@ -1,3 +1,16 @@
+# v5.0.1 (2020.04.29)
+
+### Features
+
+-
+
+### Fixes
+
+- haproxy 설치 스크립트 추가 (IMS: 258401)
+- hypercloud 삭제 시, user delete 로직 추가 (IMS: 245904)
+
+---
+
 # v5.0.0 (2020.04.22)
 
 ### Features
