@@ -236,7 +236,22 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
   }
 
   private _step0() {
-    const { mainMaster } = this.env.getNodesSortedByRole();
+    const { mainMaster, masterArr } = this.env.getNodesSortedByRole();
+
+    // 마스터 다중화 경우
+    // mainMaster 제외한 나머지 마스터 노드들
+    // 계정정보 넣어주기 위한 문자열 조합
+    const MASTER_NODE_ROOT_USER = `("${masterArr
+      .map(master => {
+        return master.user;
+      })
+      .join(' ')}")`;
+
+    const MASTER_NODE_ROOT_PASSWORD = `("${masterArr
+      .map(master => {
+        return master.password;
+      })
+      .join(' ')}")`;
 
     let script = `
       cd ~/${HyperCloudOperatorInstaller.INSTALL_HOME};
@@ -249,8 +264,8 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
       sudo sed -i "s|$HPCD_API_SERVER_VERSION|${HyperCloudOperatorInstaller.HPCD_API_SERVER_VERSION}|g" ./hypercloud.config;
       sudo sed -i "s|$HPCD_POSTGRES_VERSION|${HyperCloudOperatorInstaller.HPCD_POSTGRES_VERSION}|g" ./hypercloud.config;
       sudo sed -i "s|$MAIN_MASTER_IP|${mainMaster.ip}|g" ./hypercloud.config;
-      sudo sed -i "s|$MASTER_NODE_ROOT_PASSWORD|${mainMaster.password}|g" ./hypercloud.config;
-      sudo sed -i "s|$MASTER_NODE_ROOT_USER|${mainMaster.user}|g" ./hypercloud.config;
+      sudo sed -i "s|$MASTER_NODE_ROOT_USER|${MASTER_NODE_ROOT_USER}|g" ./hypercloud.config;
+      sudo sed -i "s|$MASTER_NODE_ROOT_PASSWORD|${MASTER_NODE_ROOT_PASSWORD}|g" ./hypercloud.config;
       sudo sed -i "s|$INVITATION_TOKEN_EXPIRED_DATE|${HyperCloudOperatorInstaller.INVITATION_TOKEN_EXPIRED_DATE}|g" ./hypercloud.config;
     `;
 
