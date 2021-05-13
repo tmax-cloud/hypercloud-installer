@@ -31,3 +31,4 @@ $ yarn package
       - .rpm 파일 확인 (redhat 계열 Linux 설치 파일)
   - Windows:
     - .msi 파일 확인
+
