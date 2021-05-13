@@ -17,7 +17,7 @@ function InstallContentsHyperCloud(props: any) {
   const { history, location, match } = props;
 
   const [state, setState] = useState({
-    operator_version: HyperCloudOperatorInstaller.HPCD_VERSION,
+    operator_version: HyperCloudOperatorInstaller.HPCD_API_SERVER_VERSION,
     console_version: HyperCloudConsoleInstaller.CONSOLE_VERSION,
     isUseIngress: true,
     sharedIngress: true,

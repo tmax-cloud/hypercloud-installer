@@ -241,6 +241,7 @@ export default class HyperCloudOperatorInstaller extends AbstractInstaller {
     // 마스터 다중화 경우
     // mainMaster 제외한 나머지 마스터 노드들
     // 계정정보 넣어주기 위한 문자열 조합
+    // ("계정1 계정2 ...")
     const MASTER_NODE_ROOT_USER = `("${masterArr
       .map(master => {
         return master.user;

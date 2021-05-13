@@ -189,7 +189,7 @@ export default class HyperCloudConsoleInstaller extends AbstractInstaller {
     export KIALI=0.0.0.0:20001
     export KIBANA=0.0.0.0:80
     export REALM=tmax
-    export KEYCLOAK=hyperauth.org
+    export KEYCLOAK=\`kubectl describe service hyperauth -n hyperauth | grep 'LoadBalancer Ingress' | cut -d ' ' -f7\`;
     export CLIENTID=hypercloud4
     export MC_MODE=false
 

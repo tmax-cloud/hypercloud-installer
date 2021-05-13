@@ -231,10 +231,8 @@ export default class HyperAuthInstaller extends AbstractInstaller {
 
     echo accessToken : $token
 
-    curl -g -i -X POST \\
-    -H "Content-Type:application/json" \\
-    -H "Authorization:Bearer $token" \\
-    'http://'$HYPERAUTH_SERVICE_IP':8080/auth/realms/tmax/user/${userName}'
+    curl -X DELETE \\
+    'http://'$HYPERAUTH_SERVICE_IP':8080/auth/realms/tmax/user/${userName}?token=$token'
     `;
     await mainMaster.exeCmd(callback);
   }

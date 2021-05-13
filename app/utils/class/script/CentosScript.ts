@@ -241,8 +241,8 @@ EOF`;
       ${masterList
         .map((master, index) => {
           return `
-          export MASTER${index}NAME=${master.hostName};
-          export MASTER${index}IP=${master.ip};
+          export MASTER${index + 1}NAME=${master.hostName};
+          export MASTER${index + 1}IP=${master.ip};
           `;
         })
         .join('')}
@@ -345,7 +345,7 @@ EOF`;
       balance roundrobin
       ${masterList
         .map(master => {
-          return `server ${master.hostName} ${master.ip}:$MASTERPORT check;`;
+          return `server ${master.hostName} ${master.ip}:$MASTERPORT check`;
         })
         .join('\n')}
     " > /etc/haproxy/haproxy.cfg;
